@@ -11,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.technovation.ui.JournalPage
+import com.example.technovation.ui.NewJournalEntry
 import com.example.technovation.ui.theme.TechnovationTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,28 +22,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             TechnovationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    NewJournalEntry(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TechnovationTheme {
-        Greeting("Android")
     }
 }

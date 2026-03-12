@@ -41,7 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun JournalPage(modifier: Modifier = Modifier) {
     Column(
-        modifier=Modifier
+        modifier=modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -97,18 +97,34 @@ data class Symptom(
 )
 
 
-class PhysicalSymptomsViewModel: ViewModel() {
+class SymptomsViewModel: ViewModel() {
     var physical_symptoms = mutableStateListOf<Symptom>(
         Symptom(1, "Dizziness"),
-        Symptom(1, "Loss of smell"),
-        Symptom(1, "Headaches"),
-        Symptom(1, "Insomnia")
+        Symptom(2, "Loss of smell"),
+        Symptom(3, "Headaches"),
+        Symptom(4, "Insomnia")
+    )
+
+    var mental_symptoms = mutableStateListOf<Symptom>(
+        Symptom(1, "Anxious"),
+        Symptom(2, "Depressed"),
+        Symptom(3, "Tired"),
+        Symptom(4, "Irritated")
+    )
+
+    var activities_list = mutableStateListOf<Symptom>(
+        Symptom(1, "Yoga"),
+        Symptom(2, "Meditation"),
+        Symptom(3, "Walking"),
+        Symptom(4, "Dancing")
     )
 
     // Is better to let the ViewModel handle the toggling
-    fun toggleSymptom(id: Int) {
-        val index = physical_symptoms.indexOfFirst { it.id == id }
-        physical_symptoms[index].selected = !physical_symptoms[index].selected
+    fun toggleSymptom(id: Int, curr_list: MutableList<Symptom>) {
+        val index = curr_list.indexOfFirst { it.id == id }
+        var temp = curr_list[index]
+        // need to replace the object with an entirely new copy
+        curr_list[index] = temp.copy(selected = !temp.selected)
     }
 }
 
@@ -126,7 +142,7 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
                 .size(24.dp)
                 .clip(CircleShape)
                 .background(if (symptom.selected) Color.Gray else Color.Green) // Changes color
-                .border(1.dp, Color.LightGray, CircleShape)
+                .clickable(enabled=true, onClick = toggleSymptom)
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -143,15 +159,17 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 @Composable
 fun NewJournalEntry(
     modifier: Modifier = Modifier,
-    viewModel: PhysicalSymptomsViewModel = viewModel()) {
+    viewModel: SymptomsViewModel = viewModel()) {
     Column(
-        modifier=Modifier
+        modifier=modifier
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
+        Spacer(modifier=Modifier.height(40.dp))
+
         Text(
             "Your Journal",
             fontSize = 30.sp,
@@ -180,7 +198,63 @@ fun NewJournalEntry(
             viewModel.physical_symptoms.forEach { symptom ->
                 SymptomItem(
                     symptom = symptom,
-                    toggleSymptom = { viewModel.toggleSymptom(symptom.id)}
+                    toggleSymptom = { viewModel.toggleSymptom(
+                        symptom.id,
+                        curr_list = viewModel.physical_symptoms)}
+                )
+            }
+        }
+
+        Spacer(modifier=Modifier.height(30.dp))
+
+        // Mental symptoms card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .absolutePadding(10.dp, 0.dp, 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(
+                "Add mental symptoms",
+                modifier = Modifier.padding(16.dp)
+            )
+
+            Spacer(modifier=Modifier.height(10.dp))
+
+            viewModel.mental_symptoms.forEach { symptom ->
+                SymptomItem(
+                    symptom = symptom,
+                    toggleSymptom = { viewModel.toggleSymptom(
+                        symptom.id,
+                        curr_list = viewModel.mental_symptoms)}
+                )
+            }
+        }
+
+        Spacer(modifier=Modifier.height(30.dp))
+
+        // Physical symptoms card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .absolutePadding(10.dp, 0.dp, 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(
+                "Add physical symptoms",
+                modifier = Modifier.padding(16.dp)
+            )
+
+            Spacer(modifier=Modifier.height(10.dp))
+
+            viewModel.activities_list.forEach { symptom ->
+                SymptomItem(
+                    symptom = symptom,
+                    toggleSymptom = { viewModel.toggleSymptom(
+                        symptom.id,
+                        curr_list = viewModel.activities_list)}
                 )
             }
         }
