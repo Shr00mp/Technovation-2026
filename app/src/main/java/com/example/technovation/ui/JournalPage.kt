@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun JournalPage(modifier: Modifier = Modifier) {
@@ -87,11 +90,30 @@ fun JournalPage(modifier: Modifier = Modifier) {
     }
 }
 
+data class Symptom(
+    val id: Int,
+    val name: String,
+    var selected: Boolean = false
+)
+
+
+class PhysicalSymptomsViewModel: ViewModel() {
+    var physical_symptoms = mutableStateListOf<Symptom>(
+        Symptom(1, "Dizziness"),
+        Symptom(1, "Loss of smell"),
+        Symptom(1, "Headaches"),
+        Symptom(1, "Insomnia")
+    )
+
+    // Is better to let the ViewModel handle the toggling
+    fun toggleSymptom(id: Int) {
+        val index = physical_symptoms.indexOfFirst { it.id == id }
+        physical_symptoms[index].selected = !physical_symptoms[index].selected
+    }
+}
 
 @Composable
-fun SymptomItem(symptom_name: String) {
-    var is_selected by remember { mutableStateOf(false) }
-
+fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -103,17 +125,15 @@ fun SymptomItem(symptom_name: String) {
             modifier = Modifier
                 .size(24.dp)
                 .clip(CircleShape)
-                .background(if (is_selected) Color.Gray else Color.Green) // Changes color
+                .background(if (symptom.selected) Color.Gray else Color.Green) // Changes color
                 .border(1.dp, Color.LightGray, CircleShape)
-                .clickable { is_selected = !is_selected }
         )
 
         Spacer(modifier = Modifier.width(16.dp))
 
         Text(
-            text = symptom_name,
-            fontSize = 18.sp,
-            color = if (is_selected) Color.Gray else Color.Black // Optional: dim text too
+            text = symptom.name,
+            fontSize = 18.sp
         )
     }
 }
@@ -121,7 +141,9 @@ fun SymptomItem(symptom_name: String) {
 
 
 @Composable
-fun NewJournalEntry(modifier: Modifier = Modifier) {
+fun NewJournalEntry(
+    modifier: Modifier = Modifier,
+    viewModel: PhysicalSymptomsViewModel = viewModel()) {
     Column(
         modifier=Modifier
             .fillMaxSize()
@@ -140,6 +162,7 @@ fun NewJournalEntry(modifier: Modifier = Modifier) {
 
         Spacer(modifier=Modifier.height(40.dp))
 
+        // Physical symptoms card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -147,7 +170,19 @@ fun NewJournalEntry(modifier: Modifier = Modifier) {
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
+            Text(
+                "Add physical symptoms",
+                modifier = Modifier.padding(16.dp)
+            )
 
+            Spacer(modifier=Modifier.height(10.dp))
+
+            viewModel.physical_symptoms.forEach { symptom ->
+                SymptomItem(
+                    symptom = symptom,
+                    toggleSymptom = { viewModel.toggleSymptom(symptom.id)}
+                )
+            }
         }
     }
 }
