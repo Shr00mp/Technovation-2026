@@ -243,7 +243,7 @@ fun NewJournalEntry(
             shape = RoundedCornerShape(16.dp)
         ) {
             Text(
-                "Add physical symptoms",
+                "Add activities",
                 modifier = Modifier.padding(16.dp)
             )
 
