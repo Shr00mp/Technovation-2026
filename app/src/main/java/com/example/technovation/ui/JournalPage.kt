@@ -1,5 +1,7 @@
 package com.example.technovation.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,14 +17,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -37,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.time.LocalDate
 
 @Composable
 fun JournalPage(modifier: Modifier = Modifier) {
@@ -96,7 +102,6 @@ data class Symptom(
     var selected: Boolean = false
 )
 
-
 class SymptomsViewModel: ViewModel() {
     var physical_symptoms = mutableStateListOf<Symptom>(
         Symptom(1, "Dizziness"),
@@ -126,6 +131,36 @@ class SymptomsViewModel: ViewModel() {
         // need to replace the object with an entirely new copy
         curr_list[index] = temp.copy(selected = !temp.selected)
     }
+
+    fun getSelectedPhysicalSymptoms(): List<Symptom> {
+        var return_list = mutableListOf<Symptom>()
+        for (symptom in physical_symptoms) {
+            if (symptom.selected) {
+                return_list.add(symptom)
+            }
+        }
+        return return_list
+    }
+
+    fun getSelectedMentalSymptoms(): List<Symptom> {
+        var return_list = mutableListOf<Symptom>()
+        for (symptom in mental_symptoms) {
+            if (symptom.selected) {
+                return_list.add(symptom)
+            }
+        }
+        return return_list
+    }
+
+    fun getSelectedActivities(): List<Symptom> {
+        var return_list = mutableListOf<Symptom>()
+        for (symptom in activities_list) {
+            if (symptom.selected) {
+                return_list.add(symptom)
+            }
+        }
+        return return_list
+    }
 }
 
 @Composable
@@ -142,7 +177,7 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
                 .size(24.dp)
                 .clip(CircleShape)
                 .background(if (symptom.selected) Color.Gray else Color.Green) // Changes color
-                .clickable(enabled=true, onClick = toggleSymptom)
+                .clickable(enabled = true, onClick = toggleSymptom)
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -155,11 +190,12 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 }
 
 
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NewJournalEntry(
     modifier: Modifier = Modifier,
-    viewModel: SymptomsViewModel = viewModel()) {
+    viewModel: SymptomsViewModel = viewModel(),
+    allEntriesViewModel: AllJournalEntries = viewModel()) {
     Column(
         modifier=modifier
             .fillMaxSize()
@@ -171,7 +207,7 @@ fun NewJournalEntry(
         Spacer(modifier=Modifier.height(40.dp))
 
         Text(
-            "Your Journal",
+            "Make a New Entry",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
@@ -234,7 +270,7 @@ fun NewJournalEntry(
 
         Spacer(modifier=Modifier.height(30.dp))
 
-        // Physical symptoms card
+        // Activities card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -256,6 +292,270 @@ fun NewJournalEntry(
                         symptom.id,
                         curr_list = viewModel.activities_list)}
                 )
+            }
+        }
+
+        Spacer(modifier=Modifier.height(30.dp))
+
+        var journal_text by remember {mutableStateOf("")}
+        TextField(
+            value=journal_text,
+            onValueChange = { journal_text = it },
+            label = { Text("Write something about how your day went") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier=Modifier.height(30.dp))
+
+        Button(
+            onClick = {
+                val newEntry = Entry(
+                    date = LocalDate.now(),
+                    physical_symptoms_entry = viewModel.getSelectedPhysicalSymptoms(),
+                    mental_symptoms_entry = viewModel.getSelectedMentalSymptoms(),
+                    activities_entry = viewModel.getSelectedActivities(),
+                    text_in_journal = journal_text
+                )
+                allEntriesViewModel.addEntry(newEntry)
+            },
+            modifier = Modifier
+                .height(60.dp)
+                .width(350.dp),
+        ) {
+            Text("Finish entry", fontSize=20.sp)
+        }
+    }
+}
+
+
+@Composable
+fun AlreadyMadeEntry(
+    modifier: Modifier = Modifier) {
+    Column(
+        modifier=modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Text(
+            "Symptom Tracker",
+            fontSize = 30.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp)
+        )
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Text(
+            text="Well done on already making an entry today!",
+            fontSize = 25.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(20.dp, 0.dp)
+        )
+
+        Text(
+            text="See you again tomorrow!",
+            fontSize = 25.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(20.dp, 0.dp)
+        )
+    }
+}
+
+
+data class Entry(
+    val date: LocalDate,
+    val physical_symptoms_entry: List<Symptom>,
+    val mental_symptoms_entry: List<Symptom>,
+    val activities_entry: List<Symptom>,
+    val text_in_journal: String,
+)
+
+@RequiresApi(Build.VERSION_CODES.O)
+class AllJournalEntries: ViewModel() {
+    val history = mutableStateListOf<Entry>()
+
+    init {
+        // This data is just for testing
+        history.add(
+            Entry(
+                date = LocalDate.of(2026, 2, 3), // 03/02/2026
+                physical_symptoms_entry = listOf(
+                    Symptom(1, "Dizziness", true),
+                    Symptom(1, "Headaches", true)
+                ),
+                mental_symptoms_entry = listOf(
+                    Symptom(1, "Anxious", true)
+                ),
+                activities_entry = listOf(
+                    Symptom(1, "Meditation", true)
+                ),
+                text_in_journal = "Today I felt a bit lightheaded in the morning, but meditation helped."
+            )
+        )
+        history.add(
+            Entry(
+                date = LocalDate.of(2026, 1, 10), // 03/02/2026
+                physical_symptoms_entry = listOf(
+                    Symptom(1, "Loss of smell", true),
+                    Symptom(1, "Cramps", true),
+                    Symptom(1, "Tremors", true)
+                ),
+                mental_symptoms_entry = listOf(
+                    Symptom(1, "Depressed", true),
+                    Symptom(1, "Tired", true)
+                ),
+                activities_entry = listOf(
+                ),
+                text_in_journal = "Was too tired today to do any exercise."
+            )
+        )
+        history.add(
+            Entry(
+                date = LocalDate.of(2026, 1, 4), // 03/02/2026
+                physical_symptoms_entry = listOf(
+                    Symptom(1, "Insomnia", true),
+                    Symptom(3, "Tremors", true),
+                ),
+                mental_symptoms_entry = listOf(
+                    Symptom(1, "Depressed", true),
+                    Symptom(2, "Groggy", true),
+                    Symptom(3, "Anxious", true)
+                ),
+                activities_entry = listOf(
+                    Symptom(1, "Yoga", true),
+                    Symptom(1, "Walk", true),
+                ),
+                text_in_journal = "Today I didn't sleep very well and felt quite groggy. I've been " +
+                        "anxious about my sleep but going on a walk and doing some yoga made me feel" +
+                        " a bit less depressed."
+            )
+        )
+    }
+
+    fun addEntry(entry: Entry) {
+        history.add(entry)
+    }
+
+    fun hasEntryForDay(date_to_check: LocalDate): Entry? {
+        for (entry in history) {
+            if (entry.date == date_to_check) {
+                return entry
+            }
+        }
+        return null
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun PastEntryCard(entry: Entry) {
+    var day_of_week = entry.date.dayOfWeek
+    var month = entry.date.month
+    var year = entry.date.year
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .absolutePadding(10.dp, 0.dp, 10.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier= Modifier
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text(
+                "$day_of_week, $month $year"
+            )
+
+            Spacer(modifier=Modifier.height(30.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                entry.physical_symptoms_entry.forEach { symptom ->
+                    Text(symptom.name + " ")
+                }
+            }
+
+            Spacer(modifier=Modifier.height(5.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                entry.mental_symptoms_entry.forEach { symptom ->
+                    Text(symptom.name + " ")
+                }
+            }
+
+            Spacer(modifier=Modifier.height(5.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                entry.activities_entry.forEach { symptom ->
+                    Text(symptom.name + " ")
+                }
+            }
+
+            Spacer(modifier=Modifier.height(20.dp))
+
+            Text(entry.text_in_journal)
+
+            Spacer(modifier=Modifier.height(20.dp))
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun PastEntries(
+    modifier: Modifier = Modifier,
+    viewModel: AllJournalEntries = viewModel()
+) {
+    Column(modifier=modifier
+        .fillMaxSize()
+        .padding(16.dp)
+        .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top)
+    {
+        Spacer(modifier=Modifier.height(40.dp))
+
+        Text(
+            "All Past Entries",
+            fontSize = 30.sp,
+            modifier=Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp)
+        )
+
+        Spacer(modifier=Modifier.height(40.dp))
+
+        if (viewModel.history.isEmpty()) {
+            Text("No entries yet. Start journaling!")
+        } else {
+            viewModel.history.forEach { entry ->
+                PastEntryCard(entry)
+                Spacer(modifier = Modifier.height(30.dp))
             }
         }
     }
