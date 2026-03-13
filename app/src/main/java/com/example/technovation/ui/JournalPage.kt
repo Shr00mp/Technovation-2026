@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -171,7 +173,7 @@ fun NewJournalEntry(
         Spacer(modifier=Modifier.height(40.dp))
 
         Text(
-            "Your Journal",
+            "Make a New Entry",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
@@ -234,7 +236,7 @@ fun NewJournalEntry(
 
         Spacer(modifier=Modifier.height(30.dp))
 
-        // Physical symptoms card
+        // Activities card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -258,5 +260,68 @@ fun NewJournalEntry(
                 )
             }
         }
+
+        Spacer(modifier=Modifier.height(30.dp))
+
+        var journal_text by remember {mutableStateOf("")}
+        TextField(
+            value=journal_text,
+            onValueChange = { journal_text = it },
+            label = { Text("Write something about how your day went") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier=Modifier.height(30.dp))
+
+        Button(
+            onClick = {},
+            modifier = Modifier
+                .height(60.dp)
+                .width(350.dp),
+        ) {
+            Text("Finish entry", fontSize=20.sp)
+        }
+    }
+}
+
+
+@Composable
+fun AlreadyMadeEntry(
+    modifier: Modifier = Modifier) {
+    Column(
+        modifier=modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Text(
+            "Symptom Tracker",
+            fontSize = 30.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp)
+        )
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Text(
+            text="Well done on already making an entry today!",
+            fontSize = 25.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(20.dp, 0.dp)
+        )
+
+        Text(
+            text="See you again tomorrow!",
+            fontSize = 25.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(20.dp, 0.dp)
+        )
     }
 }
