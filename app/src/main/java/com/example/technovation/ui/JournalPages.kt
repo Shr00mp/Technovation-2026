@@ -3,7 +3,6 @@ package com.example.technovation.ui
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,11 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,18 +36,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.ModifierLocal
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavHost
 import java.time.LocalDate
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun JournalPage(
     modifier: Modifier = Modifier,
-    navController: NavController) {
+    navController: NavController,
+    allEntriesViewModel: AllJournalEntries = viewModel(),
+    symptomsViewModel: SymptomsViewModel = viewModel()) {
+    var showDialog by remember {mutableStateOf(false)}
+    if (showDialog) {
+        QuickDialogue(onDismiss = {showDialog= false})
+    }
     Column(
         modifier=modifier
             .fillMaxSize()
@@ -68,7 +75,14 @@ fun JournalPage(
         Spacer(modifier=Modifier.height(40.dp))
 
         Button(
-            onClick = {},
+            onClick = {
+                if (allEntriesViewModel.hasEntryForDay(LocalDate.now())) {
+                    showDialog = true
+                } else {
+                    symptomsViewModel.resetSelections()
+                    navController.navigate(route = AppPages.NewEntry.title)
+                }
+            },
             modifier = Modifier
                 .height(60.dp)
                 .width(350.dp),
@@ -79,7 +93,7 @@ fun JournalPage(
         Spacer(modifier=Modifier.height(20.dp))
 
         Button(
-            onClick = {},
+            onClick = {navController.navigate(route = AppPages.PastEntries.title)},
             modifier = Modifier
                 .height(60.dp)
                 .width(350.dp),
@@ -128,7 +142,7 @@ class SymptomsViewModel: ViewModel() {
         Symptom(4, "Dancing")
     )
 
-    // Is better to let the ViewModel handle the toggling
+    // Is for selecting the Symptom with provided id and in one of the three lists
     fun toggleSymptom(id: Int, curr_list: MutableList<Symptom>) {
         val index = curr_list.indexOfFirst { it.id == id }
         var temp = curr_list[index]
@@ -165,6 +179,18 @@ class SymptomsViewModel: ViewModel() {
         }
         return return_list
     }
+
+    fun resetSelections() {
+        for (i in physical_symptoms.indices) {
+            physical_symptoms[i] = physical_symptoms[i].copy(selected = false)
+        }
+        for (i in mental_symptoms.indices) {
+            mental_symptoms[i] = mental_symptoms[i].copy(selected = false)
+        }
+        for (i in activities_list.indices) {
+            activities_list[i] = activities_list[i].copy(selected = false)
+        }
+    }
 }
 
 @Composable
@@ -199,7 +225,8 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 fun NewJournalEntry(
     modifier: Modifier = Modifier,
     viewModel: SymptomsViewModel = viewModel(),
-    allEntriesViewModel: AllJournalEntries = viewModel()) {
+    allEntriesViewModel: AllJournalEntries = viewModel(),
+    navController: NavController) {
     Column(
         modifier=modifier
             .fillMaxSize()
@@ -321,6 +348,7 @@ fun NewJournalEntry(
                     text_in_journal = journal_text
                 )
                 allEntriesViewModel.addEntry(newEntry)
+                navController.navigate(AppPages.Journal.title)
             },
             modifier = Modifier
                 .height(60.dp)
@@ -328,48 +356,6 @@ fun NewJournalEntry(
         ) {
             Text("Finish entry", fontSize=20.sp)
         }
-    }
-}
-
-
-@Composable
-fun AlreadyMadeEntry(
-    modifier: Modifier = Modifier) {
-    Column(
-        modifier=modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            "Symptom Tracker",
-            fontSize = 30.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
-        )
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Text(
-            text="Well done on already making an entry today!",
-            fontSize = 25.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(20.dp, 0.dp)
-        )
-
-        Text(
-            text="See you again tomorrow!",
-            fontSize = 25.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(20.dp, 0.dp)
-        )
     }
 }
 
@@ -448,13 +434,13 @@ class AllJournalEntries: ViewModel() {
         history.add(entry)
     }
 
-    fun hasEntryForDay(date_to_check: LocalDate): Entry? {
+    fun hasEntryForDay(date_to_check: LocalDate): Boolean {
         for (entry in history) {
             if (entry.date == date_to_check) {
-                return entry
+                return true
             }
         }
-        return null
+        return false
     }
 }
 
@@ -533,7 +519,8 @@ fun PastEntryCard(entry: Entry) {
 @Composable
 fun PastEntries(
     modifier: Modifier = Modifier,
-    viewModel: AllJournalEntries = viewModel()
+    viewModel: AllJournalEntries = viewModel(),
+    navController: NavController
 ) {
     Column(modifier=modifier
         .fillMaxSize()
@@ -564,3 +551,29 @@ fun PastEntries(
         }
     }
 }
+
+@Composable
+fun QuickDialogue(
+    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = { onDismiss() }) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Text(
+                text = "You have already made an entry today. See you again tomorrow!",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .wrapContentSize(Alignment.Center),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+

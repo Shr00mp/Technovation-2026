@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 
 enum class AppPages(var title: String) {
-    Journal(title = "Journal")
+    Journal(title = "Journal"),
+    NewEntry(title = "NewEntry"),
+    PastEntries(title = "PastEntries")
 }
 
 @Composable
