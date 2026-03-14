@@ -17,6 +17,7 @@ import com.example.technovation.ui.AlreadyMadeEntry
 import com.example.technovation.ui.JournalPage
 import com.example.technovation.ui.NewJournalEntry
 import com.example.technovation.ui.PastEntries
+import com.example.technovation.ui.TechnovationApp
 import com.example.technovation.ui.theme.TechnovationTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             TechnovationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    PastEntries(modifier = Modifier.padding(innerPadding))
+                    TechnovationApp(modifier = Modifier.padding(innerPadding))
                 }
             }
         }

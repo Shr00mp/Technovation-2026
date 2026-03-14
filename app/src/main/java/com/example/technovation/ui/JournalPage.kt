@@ -42,10 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavHost
 import java.time.LocalDate
 
 @Composable
-fun JournalPage(modifier: Modifier = Modifier) {
+fun JournalPage(
+    modifier: Modifier = Modifier,
+    navController: NavController) {
     Column(
         modifier=modifier
             .fillMaxSize()
