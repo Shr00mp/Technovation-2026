@@ -224,7 +224,7 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 @Composable
 fun NewJournalEntry(
     modifier: Modifier = Modifier,
-    viewModel: SymptomsViewModel = viewModel(),
+    symptomsViewModel: SymptomsViewModel = viewModel(),
     allEntriesViewModel: AllJournalEntries = viewModel(),
     navController: NavController) {
     Column(
@@ -262,12 +262,12 @@ fun NewJournalEntry(
 
             Spacer(modifier=Modifier.height(10.dp))
 
-            viewModel.physical_symptoms.forEach { symptom ->
+            symptomsViewModel.physical_symptoms.forEach { symptom ->
                 SymptomItem(
                     symptom = symptom,
-                    toggleSymptom = { viewModel.toggleSymptom(
+                    toggleSymptom = { symptomsViewModel.toggleSymptom(
                         symptom.id,
-                        curr_list = viewModel.physical_symptoms)}
+                        curr_list = symptomsViewModel.physical_symptoms)}
                 )
             }
         }
@@ -289,12 +289,12 @@ fun NewJournalEntry(
 
             Spacer(modifier=Modifier.height(10.dp))
 
-            viewModel.mental_symptoms.forEach { symptom ->
+            symptomsViewModel.mental_symptoms.forEach { symptom ->
                 SymptomItem(
                     symptom = symptom,
-                    toggleSymptom = { viewModel.toggleSymptom(
+                    toggleSymptom = { symptomsViewModel.toggleSymptom(
                         symptom.id,
-                        curr_list = viewModel.mental_symptoms)}
+                        curr_list = symptomsViewModel.mental_symptoms)}
                 )
             }
         }
@@ -316,12 +316,12 @@ fun NewJournalEntry(
 
             Spacer(modifier=Modifier.height(10.dp))
 
-            viewModel.activities_list.forEach { symptom ->
+            symptomsViewModel.activities_list.forEach { symptom ->
                 SymptomItem(
                     symptom = symptom,
-                    toggleSymptom = { viewModel.toggleSymptom(
+                    toggleSymptom = { symptomsViewModel.toggleSymptom(
                         symptom.id,
-                        curr_list = viewModel.activities_list)}
+                        curr_list = symptomsViewModel.activities_list)}
                 )
             }
         }
@@ -342,9 +342,9 @@ fun NewJournalEntry(
             onClick = {
                 val newEntry = Entry(
                     date = LocalDate.now(),
-                    physical_symptoms_entry = viewModel.getSelectedPhysicalSymptoms(),
-                    mental_symptoms_entry = viewModel.getSelectedMentalSymptoms(),
-                    activities_entry = viewModel.getSelectedActivities(),
+                    physical_symptoms_entry = symptomsViewModel.getSelectedPhysicalSymptoms(),
+                    mental_symptoms_entry = symptomsViewModel.getSelectedMentalSymptoms(),
+                    activities_entry = symptomsViewModel.getSelectedActivities(),
                     text_in_journal = journal_text
                 )
                 allEntriesViewModel.addEntry(newEntry)
@@ -431,7 +431,7 @@ class AllJournalEntries: ViewModel() {
     }
 
     fun addEntry(entry: Entry) {
-        history.add(entry)
+        history.add(0, entry)
     }
 
     fun hasEntryForDay(date_to_check: LocalDate): Boolean {
@@ -519,7 +519,7 @@ fun PastEntryCard(entry: Entry) {
 @Composable
 fun PastEntries(
     modifier: Modifier = Modifier,
-    viewModel: AllJournalEntries = viewModel(),
+    allEntriesViewModel: AllJournalEntries = viewModel(),
     navController: NavController
 ) {
     Column(modifier=modifier
@@ -541,10 +541,10 @@ fun PastEntries(
 
         Spacer(modifier=Modifier.height(40.dp))
 
-        if (viewModel.history.isEmpty()) {
+        if (allEntriesViewModel.history.isEmpty()) {
             Text("No entries yet. Start journaling!")
         } else {
-            viewModel.history.forEach { entry ->
+            allEntriesViewModel.history.forEach { entry ->
                 PastEntryCard(entry)
                 Spacer(modifier = Modifier.height(30.dp))
             }

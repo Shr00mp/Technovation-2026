@@ -41,13 +41,19 @@ fun TechnovationApp(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(route = AppPages.Journal.title) {
-                JournalPage(navController = navController, modifier = modifier)
+                JournalPage(navController = navController,
+                    modifier = modifier,
+                    allEntriesViewModel = allJournalEntries)
             }
             composable(route = AppPages.NewEntry.title) {
-                NewJournalEntry(navController = navController, modifier = modifier)
+                NewJournalEntry(navController = navController,
+                    modifier = modifier,
+                    allEntriesViewModel = allJournalEntries)
             }
             composable(route = AppPages.PastEntries.title) {
-                PastEntries(navController = navController, modifier = modifier)
+                PastEntries(navController = navController,
+                    modifier = modifier,
+                    allEntriesViewModel = allJournalEntries)
             }
         }
     }
