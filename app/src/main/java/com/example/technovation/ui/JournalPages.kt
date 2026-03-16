@@ -191,6 +191,24 @@ class SymptomsViewModel: ViewModel() {
             activities_list[i] = activities_list[i].copy(selected = false)
         }
     }
+
+    fun addNewSymptom(symptomName: String, type: Int) {
+        // 1 - physical symptom
+        // 2 - mental symptom
+        // 3 - an activity
+        if (type == 1) {
+            var newSymptom = Symptom(id=physical_symptoms.size, name=symptomName, selected = false)
+            physical_symptoms.add(newSymptom)
+        }
+        if (type == 2) {
+            var newSymptom = Symptom(id=mental_symptoms.size, name=symptomName, selected = false)
+            mental_symptoms.add(newSymptom)
+        }
+        else {
+            var newSymptom = Symptom(id=activities_list.size, name=symptomName, selected = false)
+            activities_list.add(newSymptom)
+        }
+    }
 }
 
 @Composable
@@ -219,6 +237,22 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
     }
 }
 
+
+@Composable
+fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int) {
+    Dialog(onDismissRequest = { onDismissRequest() }) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            // user enters name of the symptom
+            // type specifies physical mental or activities
+        }
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -269,6 +303,15 @@ fun NewJournalEntry(
                         symptom.id,
                         curr_list = symptomsViewModel.physical_symptoms)}
                 )
+            }
+
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .height(50.dp)
+                    .width(350.dp),
+            ) {
+                Text("Add new physical symptom", fontSize=20.sp)
             }
         }
 
