@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -298,6 +299,7 @@ fun NewJournalEntry(
 
     // State for tracking dialogue (0 = none, 1 = physical, 2 = mental, 3 = activity)
     var activeDialogType by remember { mutableStateOf(0) }
+    var selectedMood by remember {mutableStateOf(3)} // default mood is average
 
     // Dialogue does not show only when state is 0
     if (activeDialogType != 0) {
@@ -320,6 +322,7 @@ fun NewJournalEntry(
     ) {
         Spacer(modifier=Modifier.height(40.dp))
 
+        // Title
         Text(
             "Make a New Entry",
             fontSize = 30.sp,
@@ -327,6 +330,40 @@ fun NewJournalEntry(
                 .align(Alignment.CenterHorizontally)
                 .padding(0.dp, 15.dp)
         )
+
+        Spacer(modifier=Modifier.height(40.dp))
+
+        // Mood card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .absolutePadding(10.dp, 0.dp, 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(
+                "How are you feeling on a scale from 1 to 5? (1 being the worst and 5 being the best)",
+                modifier = Modifier.padding(16.dp)
+            )
+            val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom=20.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                moodEmojis.forEachIndexed { index, emoji ->
+                    val level = index + 1
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = emoji,
+                            fontSize = 30.sp,
+                            modifier = Modifier
+                                .clickable { selectedMood = level }
+                                .alpha(if (selectedMood == level) 1f else 0.3f)
+                        )
+                    }
+                }
+            }
+        }
 
         Spacer(modifier=Modifier.height(40.dp))
 
@@ -454,6 +491,7 @@ fun NewJournalEntry(
             onClick = {
                 val newEntry = Entry(
                     date = LocalDate.now(),
+                    mood = selectedMood,
                     physical_symptoms_entry = symptomsViewModel.getSelectedPhysicalSymptoms(),
                     mental_symptoms_entry = symptomsViewModel.getSelectedMentalSymptoms(),
                     activities_entry = symptomsViewModel.getSelectedActivities(),
@@ -474,6 +512,7 @@ fun NewJournalEntry(
 
 data class Entry(
     val date: LocalDate,
+    val mood: Int,
     val physical_symptoms_entry: List<Symptom>,
     val mental_symptoms_entry: List<Symptom>,
     val activities_entry: List<Symptom>,
@@ -489,6 +528,7 @@ class AllJournalEntries: ViewModel() {
         history.add(
             Entry(
                 date = LocalDate.of(2026, 2, 3), // 03/02/2026
+                mood = 2,
                 physical_symptoms_entry = listOf(
                     Symptom(1, "Dizziness", true),
                     Symptom(1, "Headaches", true)
@@ -505,6 +545,7 @@ class AllJournalEntries: ViewModel() {
         history.add(
             Entry(
                 date = LocalDate.of(2026, 1, 10), // 03/02/2026
+                mood = 1,
                 physical_symptoms_entry = listOf(
                     Symptom(1, "Loss of smell", true),
                     Symptom(1, "Cramps", true),
@@ -522,6 +563,7 @@ class AllJournalEntries: ViewModel() {
         history.add(
             Entry(
                 date = LocalDate.of(2026, 1, 4), // 03/02/2026
+                mood = 4,
                 physical_symptoms_entry = listOf(
                     Symptom(1, "Insomnia", true),
                     Symptom(3, "Tremors", true),
@@ -579,7 +621,17 @@ fun PastEntryCard(entry: Entry) {
                 "$day_of_week, $month $year"
             )
 
-            Spacer(modifier=Modifier.height(30.dp))
+            val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(moodEmojis[entry.mood - 1])
+            }
+
+            Spacer(modifier=Modifier.height(5.dp))
 
             Row(
                 modifier = Modifier
