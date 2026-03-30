@@ -36,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.ModifierLocal
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,7 +54,7 @@ fun JournalPage(
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
     if (showDialog) {
-        QuickDialogue(onDismiss = {showDialog= false})
+        AlreadyMadeEntryDialogue(onDismiss = {showDialog= false})
     }
     Column(
         modifier=modifier
@@ -193,9 +192,9 @@ class SymptomsViewModel: ViewModel() {
     }
 
     fun addNewSymptom(symptomName: String, type: Int) {
-        // 1 - physical symptom
-        // 2 - mental symptom
-        // 3 - an activity
+        // 1 = physical symptom
+        // 2 = mental symptom
+        // 3 = an activity
         if (type == 1) {
             var newSymptom = Symptom(id=physical_symptoms.size, name=symptomName, selected = false)
             physical_symptoms.add(newSymptom)
@@ -239,7 +238,8 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 
 
 @Composable
-fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int) {
+fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int, onConfirm: (String) -> Unit) {
+    var symptomName by remember { mutableStateOf("") }
     Dialog(onDismissRequest = { onDismissRequest() }) {
         Card(
             modifier = Modifier
@@ -248,8 +248,42 @@ fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int) {
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
-            // user enters name of the symptom
-            // type specifies physical mental or activities
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                when (type) {
+                    1 -> {
+                        Text("Enter a new physical symptom:")
+                    }
+                    2 -> {
+                        Text("Enter a new mental symptom:")
+                    }
+                    3 -> {
+                        Text("Enter an activity:")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextField(
+                    value = symptomName,
+                    onValueChange = { symptomName = it },
+                    label = { Text("Name") },
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = {
+                    if (symptomName.isNotBlank()){
+                        onConfirm(symptomName)
+                        onDismissRequest()
+                    }
+                }) {
+                    Text("Add")
+                }
+            }
         }
     }
 }
@@ -261,6 +295,21 @@ fun NewJournalEntry(
     symptomsViewModel: SymptomsViewModel = viewModel(),
     allEntriesViewModel: AllJournalEntries = viewModel(),
     navController: NavController) {
+
+    // State for tracking dialogue (0 = none, 1 = physical, 2 = mental, 3 = activity)
+    var activeDialogType by remember { mutableStateOf(0) }
+
+    // Dialogue does not show only when state is 0
+    if (activeDialogType != 0) {
+        AddNewSymptomDialogue(
+            type = activeDialogType,
+            onDismissRequest = { activeDialogType = 0 },
+            onConfirm = { name ->
+                symptomsViewModel.addNewSymptom(name, activeDialogType)
+            }
+        )
+    }
+
     Column(
         modifier=modifier
             .fillMaxSize()
@@ -306,7 +355,7 @@ fun NewJournalEntry(
             }
 
             Button(
-                onClick = {},
+                onClick = { activeDialogType = 1 },
                 modifier = Modifier
                     .height(50.dp)
                     .width(350.dp),
@@ -340,6 +389,16 @@ fun NewJournalEntry(
                         curr_list = symptomsViewModel.mental_symptoms)}
                 )
             }
+
+            Button(
+                onClick = { activeDialogType = 2 },
+                modifier = Modifier
+                    .height(50.dp)
+                    .width(350.dp),
+            ) {
+                Text("Add new physical symptom", fontSize=20.sp)
+            }
+
         }
 
         Spacer(modifier=Modifier.height(30.dp))
@@ -367,6 +426,16 @@ fun NewJournalEntry(
                         curr_list = symptomsViewModel.activities_list)}
                 )
             }
+
+            Button(
+                onClick = { activeDialogType = 3 },
+                modifier = Modifier
+                    .height(50.dp)
+                    .width(350.dp),
+            ) {
+                Text("Add new physical symptom", fontSize=20.sp)
+            }
+
         }
 
         Spacer(modifier=Modifier.height(30.dp))
@@ -596,7 +665,7 @@ fun PastEntries(
 }
 
 @Composable
-fun QuickDialogue(
+fun AlreadyMadeEntryDialogue(
     modifier: Modifier = Modifier,
     onDismiss: () -> Unit
 ) {
