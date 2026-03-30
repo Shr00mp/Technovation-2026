@@ -55,6 +55,13 @@ fun TechnovationApp(
                     modifier = modifier,
                     allEntriesViewModel = allJournalEntries)
             }
+            composable(route = AppPages.Stats.title) {
+                StatisticsPage(
+                    navController = navController,
+                    modifier = modifier,
+                    allEntriesViewModel = allJournalEntries
+                )
+            }
         }
     }
 }

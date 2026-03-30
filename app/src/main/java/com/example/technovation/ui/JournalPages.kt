@@ -2,6 +2,7 @@ package com.example.technovation.ui
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,7 +38,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -104,7 +110,7 @@ fun JournalPage(
         Spacer(modifier=Modifier.height(20.dp))
 
         Button(
-            onClick = {},
+            onClick = {navController.navigate(route = AppPages.Stats.title)},
             modifier = Modifier
                 .height(60.dp)
                 .width(350.dp),
@@ -736,6 +742,129 @@ fun AlreadyMadeEntryDialogue(
                     .wrapContentSize(Alignment.Center),
                 textAlign = TextAlign.Center,
             )
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
+    val maxMood = 5f
+    val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
+    val sortedEntries = entries.sortedBy { it.date }
+
+    Canvas(modifier = modifier) {
+        // Tightened margins for a smaller container
+        val leftPadding = 60.dp.toPx()
+        val bottomPadding = 50.dp.toPx()
+        val topPadding = 30.dp.toPx()
+        val rightPadding = 20.dp.toPx()
+
+        val chartWidth = size.width - leftPadding - rightPadding
+        val chartHeight = size.height - bottomPadding - topPadding
+
+        val xStep = if (sortedEntries.size > 1) chartWidth / (sortedEntries.size - 1) else 0f
+
+        // 1. Coordinates
+        val points = sortedEntries.mapIndexed { index, entry ->
+            val x = leftPadding + (index * xStep)
+            val y = topPadding + (chartHeight - ((entry.mood - 1) / (maxMood - 1)) * chartHeight)
+            Offset(x, y)
+        }
+
+        // 2. Y-Axis Emojis (Reduced Size)
+        val paint = android.graphics.Paint().apply {
+            textSize = 24.sp.toPx() // Shrunk from 32sp
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+
+        for (i in 0 until 5) {
+            val y = topPadding + (chartHeight - (i / 4f) * chartHeight)
+            drawLine(
+                color = Color.LightGray.copy(alpha = 0.2f),
+                start = Offset(leftPadding, y),
+                end = Offset(size.width, y),
+                strokeWidth = 1.dp.toPx()
+            )
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawText(moodEmojis[i], leftPadding / 2, y + (paint.textSize / 3), paint)
+            }
+        }
+
+        // 3. X-Axis Dates (Reduced Size)
+        val datePaint = android.graphics.Paint().apply {
+            textSize = 18.sp.toPx() // Shrunk from 24sp
+            color = android.graphics.Color.GRAY
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+
+        sortedEntries.forEachIndexed { index, entry ->
+            val x = leftPadding + (index * xStep)
+            val dateLabel = "${entry.date.monthValue}/${entry.date.dayOfMonth}"
+            drawIntoCanvas { canvas ->
+                canvas.nativeCanvas.drawText(dateLabel, x, size.height - 10.dp.toPx(), datePaint)
+            }
+        }
+
+        // 4. Drawing the Line and Points
+        for (i in 0 until points.size - 1) {
+            drawLine(
+                color = Color(0xFF6200EE),
+                start = points[i],
+                end = points[i + 1],
+                strokeWidth = 2.dp.toPx(), // Thinner line for smaller chart
+                cap = StrokeCap.Round
+            )
+        }
+
+        points.forEach { point ->
+            drawCircle(color = Color(0xFF3700B3), radius = 4.dp.toPx(), center = point)
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun StatisticsPage(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    allEntriesViewModel: AllJournalEntries = viewModel()
+) {
+    val history = allEntriesViewModel.history.sortedBy { it.date }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Your Statistics", fontSize = 24.sp, modifier = Modifier.padding(bottom = 16.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.9f) // Shrinks width to 90% of screen
+                .wrapContentHeight(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Text("Mood Progression")
+            Spacer(modifier=Modifier.height(40.dp))
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxWidth()
+                    .height(220.dp) // Manually resized to be much shorter
+            ) {
+                if (history.size < 2) {
+                    Text("Need more entries!", modifier = Modifier.align(Alignment.Center))
+                } else {
+                    MoodChart(
+                        entries = history,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
     }
 }
