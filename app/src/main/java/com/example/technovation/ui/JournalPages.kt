@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -119,13 +118,15 @@ fun JournalPage(
         }
     }
 }
-
+@RequiresApi(Build.VERSION_CODES.O)
 data class Symptom(
     val id: Int,
     val name: String,
-    var selected: Boolean = false
+    var selected: Boolean = false,
+    val dateAdded: LocalDate = LocalDate.now()
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 class SymptomsViewModel: ViewModel() {
     var physical_symptoms = mutableStateListOf<Symptom>(
         Symptom(1, "Dizziness"),
@@ -186,6 +187,7 @@ class SymptomsViewModel: ViewModel() {
         return return_list
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun resetSelections() {
         for (i in physical_symptoms.indices) {
             physical_symptoms[i] = physical_symptoms[i].copy(selected = false)
@@ -198,22 +200,53 @@ class SymptomsViewModel: ViewModel() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun addNewSymptom(symptomName: String, type: Int) {
         // 1 = physical symptom
         // 2 = mental symptom
         // 3 = an activity
-        if (type == 1) {
-            var newSymptom = Symptom(id=physical_symptoms.size, name=symptomName, selected = false)
-            physical_symptoms.add(newSymptom)
+        when (type) {
+            1 -> {
+                val newSymptom = Symptom(id = physical_symptoms.size, name = symptomName, selected = false)
+                physical_symptoms.add(newSymptom)
+            }
+            2 -> {
+                val newSymptom = Symptom(id = mental_symptoms.size, name = symptomName, selected = false)
+                mental_symptoms.add(newSymptom)
+            }
+            else -> {
+                val newSymptom = Symptom(id = activities_list.size, name = symptomName, selected = false)
+                activities_list.add(newSymptom)
+            }
         }
-        if (type == 2) {
-            var newSymptom = Symptom(id=mental_symptoms.size, name=symptomName, selected = false)
-            mental_symptoms.add(newSymptom)
-        }
-        else {
-            var newSymptom = Symptom(id=activities_list.size, name=symptomName, selected = false)
-            activities_list.add(newSymptom)
-        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun calculateImprovement(history: List<Entry>, activity: Symptom, symptomName: String): Double? {
+        // Improvement is calculated by comparing the number of times a symptom appears before and after starting an activity
+        // If the percentage change is significant enough, this represents there being an improvement
+        // This "percentage" is in terms of how often the symptom appears in the total number of days
+
+        val beforeEntries = history.filter { it.date.isBefore(activity.dateAdded) }
+        val afterEntries = history.filter { it.date.isAfter(activity.dateAdded) || it.date.isEqual(activity.dateAdded) }
+
+        // Should have at least some entries before and after the activity started to make a comparison
+        if (beforeEntries.isEmpty() || afterEntries.isEmpty()) return null
+
+       // Get the regularity of symptom before activity using (total days with symptom) / (total days without symptom)
+        val frequencyBefore = beforeEntries.count { entry ->
+            entry.mental_symptoms_entry.any { it.name == symptomName } ||
+                    entry.physical_symptoms_entry.any { it.name == symptomName }
+        }.toDouble() / beforeEntries.size
+
+        // Get the regularity of the symptom after activity
+        val frequencyAfter = afterEntries.count { entry ->
+            entry.mental_symptoms_entry.any { it.name == symptomName } ||
+                    entry.physical_symptoms_entry.any { it.name == symptomName }
+        }.toDouble() / afterEntries.size
+
+        // Return the difference
+        return (frequencyBefore - frequencyAfter) * 100
     }
 }
 
@@ -833,9 +866,26 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
 fun StatisticsPage(
     navController: NavController,
     modifier: Modifier = Modifier,
-    allEntriesViewModel: AllJournalEntries = viewModel()
+    allEntriesViewModel: AllJournalEntries = viewModel(),
+    symptomsViewModel: SymptomsViewModel = viewModel()
 ) {
     val history = allEntriesViewModel.history.sortedBy { it.date }
+    val improvements = mutableListOf<String>()
+
+    symptomsViewModel.activities_list.forEach { activity ->
+        // Gets all the mental and physical symptoms into one list
+        val allSymptomNames = (symptomsViewModel.physical_symptoms + symptomsViewModel.mental_symptoms).map { it.name }
+
+        allSymptomNames.forEach { sName ->
+            // Change is a percentage. It is higher if there is a more significant difference in symptom before and after activity
+            val change = symptomsViewModel.calculateImprovement(history, activity, sName)
+
+            // Only report improvement if the reduction is large enough. Boundary in this case is 25%
+            if (change != null && change >= 25.0) {
+                improvements.add("Your $sName has decreased by ${change.toInt()}% since you started ${activity.name}.")
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -851,6 +901,7 @@ fun StatisticsPage(
                 .padding(0.dp, 15.dp)
         )
 
+        // Mood line graph
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -882,6 +933,31 @@ fun StatisticsPage(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Card for showing which activities correlate to improvements in which symptoms
+        if (improvements.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .absolutePadding(10.dp, 0.dp, 10.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("Activity Insights", fontSize = 24.sp, modifier = Modifier.padding(vertical = 10.dp))
+                improvements.forEach { text ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                    ) {
+                        Text(text, modifier = Modifier.padding(16.dp))
+                    }
+                }
+            }
+        }
+
+        // Card for plotting the progression of any symptom
     }
 }
 
