@@ -752,36 +752,39 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
     val maxMood = 5f
     val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
     val sortedEntries = entries.sortedBy { it.date }
+    // Note that the coordinate system has (0, 0) as the top left corner
 
     Canvas(modifier = modifier) {
-        // Tightened margins for a smaller container
-        val leftPadding = 60.dp.toPx()
-        val bottomPadding = 50.dp.toPx()
+        val leftPadding = 60.dp.toPx() // Creates space for emojis
+        val bottomPadding = 50.dp.toPx() // Creates a lane for the dates
         val topPadding = 30.dp.toPx()
         val rightPadding = 20.dp.toPx()
 
+        // Get the actual width and height of the chart
         val chartWidth = size.width - leftPadding - rightPadding
         val chartHeight = size.height - bottomPadding - topPadding
 
+        // Gets the number of pixels between each day
         val xStep = if (sortedEntries.size > 1) chartWidth / (sortedEntries.size - 1) else 0f
 
-        // 1. Coordinates
+        // Gets the x and y coordinate of each of the points
         val points = sortedEntries.mapIndexed { index, entry ->
             val x = leftPadding + (index * xStep)
             val y = topPadding + (chartHeight - ((entry.mood - 1) / (maxMood - 1)) * chartHeight)
             Offset(x, y)
         }
 
-        // 2. Y-Axis Emojis (Reduced Size)
+        // For drawing the emojis
         val paint = android.graphics.Paint().apply {
-            textSize = 24.sp.toPx() // Shrunk from 32sp
+            textSize = 24.sp.toPx()
             textAlign = android.graphics.Paint.Align.CENTER
         }
 
+        // Draws the 5 horizontal grid lines
         for (i in 0 until 5) {
             val y = topPadding + (chartHeight - (i / 4f) * chartHeight)
             drawLine(
-                color = Color.LightGray.copy(alpha = 0.2f),
+                color = Color.DarkGray.copy(alpha = 0.2f),
                 start = Offset(leftPadding, y),
                 end = Offset(size.width, y),
                 strokeWidth = 1.dp.toPx()
@@ -791,13 +794,14 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
             }
         }
 
-        // 3. X-Axis Dates (Reduced Size)
+        // For drawing the dates
         val datePaint = android.graphics.Paint().apply {
             textSize = 18.sp.toPx() // Shrunk from 24sp
             color = android.graphics.Color.GRAY
             textAlign = android.graphics.Paint.Align.CENTER
         }
 
+        // Plots the dates for each entry
         sortedEntries.forEachIndexed { index, entry ->
             val x = leftPadding + (index * xStep)
             val dateLabel = "${entry.date.monthValue}/${entry.date.dayOfMonth}"
@@ -806,17 +810,18 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
             }
         }
 
-        // 4. Drawing the Line and Points
+        // Draw the line between each point
         for (i in 0 until points.size - 1) {
             drawLine(
                 color = Color(0xFF6200EE),
                 start = points[i],
                 end = points[i + 1],
-                strokeWidth = 2.dp.toPx(), // Thinner line for smaller chart
+                strokeWidth = 2.dp.toPx(),
                 cap = StrokeCap.Round
             )
         }
 
+        // Draw the circle for each point
         points.forEach { point ->
             drawCircle(color = Color(0xFF3700B3), radius = 4.dp.toPx(), center = point)
         }
@@ -838,18 +843,29 @@ fun StatisticsPage(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Your Statistics", fontSize = 24.sp, modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            "Your Progress",
+            fontSize = 30.sp,
+            modifier=Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp)
+        )
 
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.9f) // Shrinks width to 90% of screen
-                .wrapContentHeight(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+                .fillMaxWidth()
+                .absolutePadding(10.dp, 0.dp, 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text("Mood Progression")
-            Spacer(modifier=Modifier.height(40.dp))
+            Spacer(modifier=Modifier.height(15.dp))
+            Text(
+                "Your Mood over Time",
+                fontSize = 20.sp,
+                modifier=Modifier
+                    .align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier=Modifier.height(20.dp))
             Box(
                 modifier = Modifier
                     .padding(8.dp)
