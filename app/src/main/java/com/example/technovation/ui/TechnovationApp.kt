@@ -8,8 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
@@ -60,6 +58,12 @@ fun TechnovationApp(
                     navController = navController,
                     modifier = modifier,
                     allEntriesViewModel = allJournalEntries
+                )
+            }
+            composable(route = AppPages.Stats.title) {
+                MedicationPage(
+                    navController = navController,
+                    modifier = modifier
                 )
             }
         }
