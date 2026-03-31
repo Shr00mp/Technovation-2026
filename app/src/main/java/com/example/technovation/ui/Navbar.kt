@@ -2,6 +2,7 @@ package com.example.technovation.ui
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -19,7 +20,8 @@ enum class AppPages(var title: String) {
     Journal(title = "Journal"),
     NewEntry(title = "NewEntry"),
     PastEntries(title = "PastEntries"),
-    Stats(title="Stats")
+    Stats(title="Stats"),
+    Medication(title="Medication")
 }
 
 @Composable
@@ -39,7 +41,24 @@ fun BottomNavigationBar(
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
-                selectedIndicatorColor = Color.Green,
+                selectedIndicatorColor = Color.Blue,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                disabledIconColor = Color.Gray,
+                disabledTextColor = Color.Gray
+            ),
+            onClick = { onTabClick(AppPages.Journal) }
+        )
+
+        // Medication Tab
+        NavigationBarItem(
+            selected = AppPages.Medication.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            label = { Text(AppPages.Medication.title) },
+            icon = { Icon(Icons.Filled.CheckCircle, contentDescription = AppPages.Journal.title) },
+            colors = NavigationBarItemColors(
+                selectedIconColor = Color.Gray,
+                selectedTextColor = Color.Gray,
+                selectedIndicatorColor = Color.Blue,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 disabledIconColor = Color.Gray,
