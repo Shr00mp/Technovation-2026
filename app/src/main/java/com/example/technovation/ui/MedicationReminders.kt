@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MedicationPage(
     modifier: Modifier = Modifier,
