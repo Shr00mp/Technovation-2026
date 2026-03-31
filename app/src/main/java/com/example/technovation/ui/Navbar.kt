@@ -4,6 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -21,7 +22,9 @@ enum class AppPages(var title: String) {
     NewEntry(title = "NewEntry"),
     PastEntries(title = "PastEntries"),
     Stats(title="Stats"),
-    Medication(title="Medication")
+    Medication(title="Medication"),
+    Audio(title="Audio"),
+    MakeRecording(title="Make Recording")
 }
 
 @Composable
@@ -54,7 +57,7 @@ fun BottomNavigationBar(
         NavigationBarItem(
             selected = AppPages.Medication.title == currentDestination?.route, // Mark as selected if current route matches Home route
             label = { Text(AppPages.Medication.title) },
-            icon = { Icon(Icons.Filled.CheckCircle, contentDescription = AppPages.Journal.title) },
+            icon = { Icon(Icons.Filled.CheckCircle, contentDescription = AppPages.Medication.title) },
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
@@ -64,7 +67,24 @@ fun BottomNavigationBar(
                 disabledIconColor = Color.Gray,
                 disabledTextColor = Color.Gray
             ),
-            onClick = { onTabClick(AppPages.Journal) }
+            onClick = { onTabClick(AppPages.Medication) }
+        )
+
+        // Record Audio Tab
+        NavigationBarItem(
+            selected = AppPages.Audio.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            label = { Text(AppPages.Audio.title) },
+            icon = { Icon(Icons.Filled.Person, contentDescription = AppPages.Audio.title) },
+            colors = NavigationBarItemColors(
+                selectedIconColor = Color.Gray,
+                selectedTextColor = Color.Gray,
+                selectedIndicatorColor = Color.Blue,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                disabledIconColor = Color.Gray,
+                disabledTextColor = Color.Gray
+            ),
+            onClick = { onTabClick(AppPages.Audio) }
         )
     }
 }

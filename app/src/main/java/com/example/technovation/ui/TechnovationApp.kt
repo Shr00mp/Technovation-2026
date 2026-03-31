@@ -60,8 +60,20 @@ fun TechnovationApp(
                     allEntriesViewModel = allJournalEntries
                 )
             }
-            composable(route = AppPages.Stats.title) {
+            composable(route = AppPages.Medication.title) {
                 MedicationPage(
+                    navController = navController,
+                    modifier = modifier
+                )
+            }
+            composable(route = AppPages.Audio.title) {
+                AudioPage(
+                    navController = navController,
+                    modifier = modifier
+                )
+            }
+            composable(route = AppPages.MakeRecording.title) {
+                MakeRecording(
                     navController = navController,
                     modifier = modifier
                 )
