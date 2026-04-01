@@ -30,8 +30,10 @@ import androidx.navigation.NavController
 import java.io.File
 import android.Manifest
 import android.os.Environment
-import androidx.core.content.ContextCompat
-import java.time.LocalDate
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.IOException
 
 @Composable
 fun AudioPage(
@@ -86,116 +88,37 @@ fun AudioPage(
     }
 }
 
-//@RequiresApi(Build.VERSION_CODES.S)
-//@Composable
-//fun MakeRecording(
-//    modifier: Modifier = Modifier,
-//    navController: NavController
-//) {
-//    val context = LocalContext.current
-//    var isRecording by remember { mutableStateOf(false) }
-//    var secondsLeft by remember { mutableIntStateOf(5) }
-//    var recorder: MediaRecorder? by remember { mutableStateOf(null) }
-//    var outputFile by remember { mutableStateOf("") }
-//    val timerLength: Long = 5
-//
-//    val startRecording = {
-//        val file = File(
-//            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-//            "recording_${LocalDate.now()}"
-//        )
-//        outputFile = file.absolutePath
-//
-//        recorder = MediaRecorder().apply {
-//            setAudioSource(MediaRecorder.AudioSource.MIC)
-//            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-//            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-//            prepare()
-//            start()
-//        }
-//        isRecording = true
-//    }
-//
-//    // Handle request for permission to use audio recording
-//    val permissionLauncher = rememberLauncherForActivityResult(
-//        ActivityResultContracts.RequestPermission(),
-//    ) { isGranted ->
-//        if (isGranted) {
-//            startRecording()
-//        }
-//    }
-//
-//    // Timer
-//    val timer = object: CountDownTimer(timerLength*1000, 1000) {
-//        override fun onTick(millisUntilFunished: Long) {
-//            secondsLeft = (millisUntilFunished / 1000).toInt() + 1 // rounding up
-//        }
-//
-//        override fun onFinish() {
-//            // Stop recording when 5 seconds are up
-//            recorder?.stop()
-//            recorder?.release()
-//            recorder = null
-//            isRecording = false
-//            secondsLeft = 5
-//        }
-//    }
-//
-//    Column(
-//        modifier=modifier
-//            .fillMaxSize()
-//            .padding(16.dp),
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        verticalArrangement = Arrangement.Center
-//    ) {
-//        Text(
-//            "Make a Recording",
-//            fontSize = 30.sp,
-//            modifier = Modifier
-//                .align(Alignment.CenterHorizontally)
-//                .padding(0.dp, 15.dp)
-//        )
-//
-//        Text(
-//            "Take a deep breathe" +
-//                    "\n When you are ready, click the Start Recording button below" +
-//                    "\n Say 'aaaaa' steadily until the $timerLength-second timer runs out",
-//            fontSize = 20.sp,
-//            modifier = Modifier
-//                .align(Alignment.CenterHorizontally)
-//        )
-//
-//        Spacer(modifier = Modifier.height(40.dp))
-//
-//        Button(
-//            onClick = {
-//                if (!isRecording) {
-//                    if(ContextCompat.checkSelfPermission(context,
-//                            Manifest.permission.RECORD_AUDIO)
-//                        ==_root_ide_package_.android.content.pm.PackageManager.PERMISSION_GRANTED) {
-//                        timer.start()
-//                        startRecording()
-//                    } else {
-//                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-//                    }
-//                } else {
-//                    recorder?.apply {
-//                        stop()
-//                        release()
-//                    }
-//                    recorder = null
-//                    isRecording = false
-//                }
-//            },
-//            enabled = !isRecording,
-//            modifier = Modifier
-//                .height(60.dp)
-//                .width(350.dp),
-//        ) {
-//            Text(if (isRecording){"Recording..."} else {"Start Recording"}, fontSize=20.sp)
-//        }
-//    }
-//}
+fun uploadAudioToServer(filePath: String) {
+    val client = OkHttpClient()
+    val file = File(filePath)
+
+    // The key "file" must match the parameter name in your FastAPI function: save_audio(file: UploadFile)
+    val requestBody = MultipartBody.Builder()
+        .setType(MultipartBody.FORM)
+        .addFormDataPart(
+            "file",
+            file.name,
+            file.asRequestBody("audio/mpeg".toMediaTypeOrNull())
+        )
+        .build()
+
+    val request = Request.Builder()
+        .url("https://unlanguid-ringlike-sheri.ngrok-free.dev/upload-audio/") // 10.0.2.2 points to your computer's localhost from the emulator
+        .post(requestBody)
+        .build()
+
+    client.newCall(request).enqueue(object : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            e.printStackTrace() // Handle connection errors here
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+            if (response.isSuccessful) {
+                println("Upload Successful: ${response.body?.string()}")
+            }
+        }
+    })
+}
 
 @RequiresApi(Build.VERSION_CODES.S)
 @Composable
@@ -206,6 +129,7 @@ fun MakeRecording(
     var recorder: MediaRecorder? by remember {mutableStateOf(null)}
     var isRecording by remember {mutableStateOf(false)}
     var outputFile by remember {mutableStateOf("")}
+    var hasFinishedRecording by remember {mutableStateOf(false)}
 
     var permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -228,9 +152,10 @@ fun MakeRecording(
         )
 
         Text(
-            "Take a deep breathe" +
-                    "\n When you are ready, click the Start Recording button below" +
-                    "\n Say 'aaaaa' steadily until the 5-second timer runs out",
+            "Take a deep breath." +
+                    "\n When you are ready, click the Start Recording button below." +
+                    "\n Say 'aaaaa' steadily for around 3 seconds." +
+                    "\nClick the Stop Recording button when you are done.",
             fontSize = 20.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -241,11 +166,18 @@ fun MakeRecording(
         Button(
             onClick = {
                 if (!isRecording) {
+                    if (outputFile.isNotEmpty()) {
+                        val oldFile = File(outputFile)
+                        if (oldFile.exists()) {
+                            oldFile.delete()
+                        }
+                    }
+
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
 
                     val file = File(
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-                        "audio_recording_${LocalDate.now()}.mp3"
+                        "audio_recording_${System.currentTimeMillis()}.mp3"
                     )
 
                     outputFile = file.absolutePath
@@ -268,19 +200,30 @@ fun MakeRecording(
 
                     recorder = null
                     isRecording = false
+                    hasFinishedRecording = true
                 }
             },
             modifier = Modifier
                 .height(60.dp)
                 .width(350.dp),
         ) {
-            Text(if (isRecording){"Recording..."} else {"Start Recording"}, fontSize=20.sp)
+            Text(if (isRecording){"Stop Recording"} else if (hasFinishedRecording) {"Record Again"} else {"Start Recording"}, fontSize=20.sp)
         }
 
         Spacer(modifier = Modifier.height(40.dp))
-
-        if (outputFile.isNotEmpty()) {
-            Text("Output path: $outputFile")
+        if (hasFinishedRecording && !isRecording) {
+            Text("If you are happy with your recording, click Get Results. \nIf not, you can make a new recording by clicking Record Again above.", fontSize=20.sp)
+            Spacer(modifier = Modifier.height(40.dp))
+            Button(
+                onClick = {
+                    if (outputFile.isNotEmpty()) {
+                        uploadAudioToServer(outputFile)
+                    }
+                },
+                modifier = Modifier.height(60.dp).width(350.dp)
+            ) {
+                Text("Get Results", fontSize = 20.sp)
+            }
         }
     }
 }
