@@ -30,10 +30,17 @@ import androidx.navigation.NavController
 import java.io.File
 import android.Manifest
 import android.os.Environment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.ViewModel
+import com.google.gson.Gson
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.IOException
+import com.google.gson.annotations.SerializedName
 
 @Composable
 fun AudioPage(
@@ -88,7 +95,18 @@ fun AudioPage(
     }
 }
 
-fun uploadAudioToServer(filePath: String) {
+data class AnalysisResult(
+    @SerializedName("severity_score")
+    val severityScore: Double,
+
+    @SerializedName("accuracy")
+    val accuracy: Double,
+
+    @SerializedName("top_indicators")
+    val topIndicators: List<String>
+)
+
+fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
     val client = OkHttpClient()
     val file = File(filePath)
 
@@ -103,7 +121,7 @@ fun uploadAudioToServer(filePath: String) {
         .build()
 
     val request = Request.Builder()
-        .url("https://unlanguid-ringlike-sheri.ngrok-free.dev/upload-audio/") // 10.0.2.2 points to your computer's localhost from the emulator
+        .url("https://unlanguid-ringlike-sheri.ngrok-free.dev/upload-audio/") // using ngrok
         .post(requestBody)
         .build()
 
@@ -114,7 +132,12 @@ fun uploadAudioToServer(filePath: String) {
 
         override fun onResponse(call: Call, response: Response) {
             if (response.isSuccessful) {
-                println("Upload Successful: ${response.body?.string()}")
+                val jsonString = response.body?.string()
+                // Need to convert the json response to AnalysisResult object
+                val result = Gson().fromJson(jsonString, AnalysisResult::class.java)
+                onResult(result) // Send the result back!
+            } else {
+                onResult(null)
             }
         }
     })
@@ -130,6 +153,11 @@ fun MakeRecording(
     var isRecording by remember {mutableStateOf(false)}
     var outputFile by remember {mutableStateOf("")}
     var hasFinishedRecording by remember {mutableStateOf(false)}
+    var isLoadingResults by remember {mutableStateOf(false)}
+    var analysisData by remember { mutableStateOf<AnalysisResult?>(null) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var hasGottenResults by remember { mutableStateOf(false) }
 
     var permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -216,14 +244,54 @@ fun MakeRecording(
             Spacer(modifier = Modifier.height(40.dp))
             Button(
                 onClick = {
+                    if (isRecording)
                     if (outputFile.isNotEmpty()) {
-                        uploadAudioToServer(outputFile)
+                        isLoadingResults = true
+
+                        uploadAudioToServer(outputFile) { result ->
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                analysisData = result
+                                isLoadingResults = false
+                            }
+                        }
                     }
                 },
                 modifier = Modifier.height(60.dp).width(350.dp)
             ) {
-                Text("Get Results", fontSize = 20.sp)
+                Text(if (isLoadingResults) "Processing..." else "Get Results", fontSize = 20.sp)
             }
         }
+        analysisData?.let { result ->
+            Spacer(modifier = Modifier.height(20.dp))
+            ResultView(result) // I'll define this helper below
+        }
+    }
+}
+
+@Composable
+fun ResultView(result: AnalysisResult) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .padding(16.dp)
+    ) {
+        Text("Results:", fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        Text("Severity: ${(result.severityScore * 100).toInt()}%")
+        Text("Accuracy: ${(result.accuracy * 100).toInt()}%")
+
+        Spacer(modifier = Modifier.height(10.dp))
+        Text("Key Observations:", fontWeight = FontWeight.SemiBold)
+
+        result.topIndicators.forEach { factor ->
+            Text("• Your $factor is a primary factor.", fontSize = 16.sp)
+        }
+    }
+}
+
+class AllAudioResults : ViewModel() {
+    val history = mutableStateListOf<AnalysisResult>()
+    fun saveResult(result: AnalysisResult) {
+        history.add(result)
     }
 }
