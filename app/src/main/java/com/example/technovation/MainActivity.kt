@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             TechnovationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    WelcomePage(modifier = Modifier.padding(innerPadding))
+                    TechnovationApp(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
