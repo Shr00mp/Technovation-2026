@@ -4,6 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -24,7 +25,8 @@ enum class AppPages(var title: String) {
     Stats(title="Stats"),
     Medication(title="Medication"),
     Audio(title="Audio"),
-    MakeRecording(title="Make Recording")
+    MakeRecording(title="Make Recording"),
+    HomePage(title="Home Page")
 }
 
 @Composable
@@ -36,6 +38,23 @@ fun BottomNavigationBar(
     NavigationBar(
         modifier = Modifier.clip(RoundedCornerShape(20.dp))
     ) {
+        //Home Page
+        NavigationBarItem(
+            selected = AppPages.HomePage.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            label = { Text(AppPages.HomePage.title) },
+            icon = { Icon(Icons.Filled.Home, contentDescription = AppPages.HomePage.title) },
+            colors = NavigationBarItemColors(
+                selectedIconColor = Color.Gray,
+                selectedTextColor = Color.Gray,
+                selectedIndicatorColor = Color.Blue,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                disabledIconColor = Color.Gray,
+                disabledTextColor = Color.Gray
+            ),
+            onClick = { onTabClick(AppPages.HomePage) }
+        )
+
         // Journal Tab
         NavigationBarItem(
             selected = AppPages.Journal.title == currentDestination?.route, // Mark as selected if current route matches Home route
