@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -381,23 +382,21 @@ fun NewJournalEntry(
     symptomsViewModel: SymptomsViewModel = viewModel(),
     allEntriesViewModel: AllJournalEntries = viewModel(),
     navController: NavController) {
-
-    @Composable
-    fun voiceToSpeech(
-    ) {
-        var spokenText by remember {mutableStateOf("")}
+        var journalText by remember {mutableStateOf("")}
         val voiceInputHandler = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { activityResult ->
             if(activityResult.resultCode == Activity.RESULT_OK) {
                 val resultText = activityResult.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 resultText?.get(0)?.let{ recordedText ->
-                    spokenText += recordedText
+                    journalText += recordedText
                 }
             }
         }
         val context = LocalContext.current
         val language = "en"
+
+    fun voiceInput() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(
             RecognizerIntent.EXTRA_LANGUAGE_MODEL,
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
@@ -405,9 +404,9 @@ fun NewJournalEntry(
             .putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
             .putExtra(RecognizerIntent.EXTRA_PROMPT, "Voice to text")
 
-        try{
+        try {
             voiceInputHandler.launch(intent)
-        }catch(error: Exception){
+        } catch (e: Exception) {
             Toast.makeText(context, "Sorry, we couldn't catch that!", Toast.LENGTH_SHORT).show()
         }
     }
@@ -592,13 +591,22 @@ fun NewJournalEntry(
 
         Spacer(modifier=Modifier.height(30.dp))
 
-        var journal_text by remember {mutableStateOf("")}
+
         TextField(
-            value=journal_text,
-            onValueChange = { journal_text = it },
+            value=journalText,
+            onValueChange = { journalText = it },
             label = { Text("Write about how your day went") },
             modifier = Modifier.fillMaxWidth()
         )
+        Button(
+            onClick = {voiceInput()}
+        ){
+            Icon(
+                //For now as there is no mic icon
+                imageVector = Icons.Default.Phone,
+                contentDescription = "Phone"
+            )
+        }
 
         Spacer(modifier=Modifier.height(30.dp))
 
@@ -610,7 +618,7 @@ fun NewJournalEntry(
                     physical_symptoms_entry = symptomsViewModel.getSelectedPhysicalSymptoms(),
                     mental_symptoms_entry = symptomsViewModel.getSelectedMentalSymptoms(),
                     activities_entry = symptomsViewModel.getSelectedActivities(),
-                    text_in_journal = journal_text
+                    text_in_journal = journalText
                 )
                 allEntriesViewModel.addEntry(newEntry)
                 navController.navigate(AppPages.Journal.title)
