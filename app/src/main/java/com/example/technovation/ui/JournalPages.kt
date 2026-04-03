@@ -48,6 +48,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -591,21 +592,36 @@ fun NewJournalEntry(
 
         Spacer(modifier=Modifier.height(30.dp))
 
-
-        TextField(
-            value=journalText,
-            onValueChange = { journalText = it },
-            label = { Text("Write about how your day went") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Button(
-            onClick = {voiceInput()}
-        ){
-            Icon(
-                //For now as there is no mic icon
-                imageVector = Icons.Default.Phone,
-                contentDescription = "Phone"
+        //The layout of this is ugly for now but it works
+        Card(modifier = Modifier
+            .fillMaxWidth()
+            .absolutePadding(10.dp, 0.dp, 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+            shape = RoundedCornerShape(16.dp)){
+            TextField(
+                value=journalText,
+                onValueChange = { journalText = it },
+                label = { Text("Write about how your day went") },
+                modifier = Modifier.padding(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Gray,
+                    unfocusedContainerColor = Color.Green
+                )
             )
+            Text(
+                text = "Press the button below for voice to text",
+                modifier = Modifier.padding(16.dp)
+            )
+            Button(
+                onClick = { voiceInput() },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Icon(
+                    //For now as there is no mic icon
+                    imageVector = Icons.Default.Phone,
+                    contentDescription = "Phone"
+                )
+            }
         }
 
         Spacer(modifier=Modifier.height(30.dp))
