@@ -1,5 +1,6 @@
 package com.example.technovation.ui
 
+import Home
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
@@ -35,9 +36,14 @@ fun TechnovationApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppPages.Journal.title,
+            startDestination = AppPages.HomePage.title,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(route = AppPages.HomePage.title) {
+                Home(navController = navController,
+                    modifier = modifier,
+                    allEntriesViewModel = allJournalEntries)
+            }
             composable(route = AppPages.Journal.title) {
                 JournalPage(navController = navController,
                     modifier = modifier,
