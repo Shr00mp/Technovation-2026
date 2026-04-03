@@ -22,6 +22,7 @@ fun TechnovationApp(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val allJournalEntries: AllJournalEntries = viewModel()
+    val allAudioResults: AllAudioResults = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -81,7 +82,15 @@ fun TechnovationApp(
             composable(route = AppPages.MakeRecording.title) {
                 MakeRecording(
                     navController = navController,
-                    modifier = modifier
+                    modifier = modifier,
+                    allResultsViewmodel = allAudioResults
+                )
+            }
+            composable(route = AppPages.PastRecordings.title) {
+                AllPastRecordings(
+                    navController = navController,
+                    modifier = modifier,
+                    allAudioResults = allAudioResults
                 )
             }
         }
