@@ -1,6 +1,13 @@
 package com.example.technovation.ui
 
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Paint
 import android.os.Build
+import android.speech.RecognizerIntent
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -27,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -40,6 +48,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -56,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
@@ -67,6 +77,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -77,6 +88,7 @@ fun JournalPage(
     allEntriesViewModel: AllJournalEntries = viewModel(),
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
+
     if (showDialog) {
         AlreadyMadeEntryDialogue(onDismiss = {showDialog= false})
     }
@@ -276,7 +288,7 @@ class SymptomsViewModel: ViewModel() {
         val target = symptomName.trim()
 
         return history.groupBy { entry ->
-            entry.date.with(java.time.DayOfWeek.MONDAY)
+            entry.date.with(DayOfWeek.MONDAY)
         }.mapValues { (_, entriesInWeek) ->
             entriesInWeek.count { entry ->
                 entry.physical_symptoms_entry.any { it.name.equals(target, ignoreCase = true) } ||
@@ -371,6 +383,34 @@ fun NewJournalEntry(
     symptomsViewModel: SymptomsViewModel = viewModel(),
     allEntriesViewModel: AllJournalEntries = viewModel(),
     navController: NavController) {
+        var journalText by remember {mutableStateOf("")}
+        val voiceInputHandler = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { activityResult ->
+            if(activityResult.resultCode == Activity.RESULT_OK) {
+                val resultText = activityResult.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                resultText?.get(0)?.let{ recordedText ->
+                    journalText += recordedText
+                }
+            }
+        }
+        val context = LocalContext.current
+        val language = "en"
+
+    fun voiceInput() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(
+            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+        )
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Voice to text")
+
+        try {
+            voiceInputHandler.launch(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Sorry, we couldn't catch that!", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // State for tracking dialogue (0 = none, 1 = physical, 2 = mental, 3 = activity)
     var activeDialogType by remember { mutableStateOf(0) }
@@ -552,13 +592,37 @@ fun NewJournalEntry(
 
         Spacer(modifier=Modifier.height(30.dp))
 
-        var journal_text by remember {mutableStateOf("")}
-        TextField(
-            value=journal_text,
-            onValueChange = { journal_text = it },
-            label = { Text("Write something about how your day went") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        //The layout of this is ugly for now but it works
+        Card(modifier = Modifier
+            .fillMaxWidth()
+            .absolutePadding(10.dp, 0.dp, 10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+            shape = RoundedCornerShape(16.dp)){
+            TextField(
+                value=journalText,
+                onValueChange = { journalText = it },
+                label = { Text("Write about how your day went") },
+                modifier = Modifier.padding(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Gray,
+                    unfocusedContainerColor = Color.Green
+                )
+            )
+            Text(
+                text = "Press the button below for voice to text",
+                modifier = Modifier.padding(16.dp)
+            )
+            Button(
+                onClick = { voiceInput() },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Icon(
+                    //For now as there is no mic icon
+                    imageVector = Icons.Default.Phone,
+                    contentDescription = "Phone"
+                )
+            }
+        }
 
         Spacer(modifier=Modifier.height(30.dp))
 
@@ -570,7 +634,7 @@ fun NewJournalEntry(
                     physical_symptoms_entry = symptomsViewModel.getSelectedPhysicalSymptoms(),
                     mental_symptoms_entry = symptomsViewModel.getSelectedMentalSymptoms(),
                     activities_entry = symptomsViewModel.getSelectedActivities(),
-                    text_in_journal = journal_text
+                    text_in_journal = journalText
                 )
                 allEntriesViewModel.addEntry(newEntry)
                 navController.navigate(AppPages.Journal.title)
@@ -843,9 +907,9 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
         }
 
         // For drawing the emojis
-        val paint = android.graphics.Paint().apply {
+        val paint = Paint().apply {
             textSize = 24.sp.toPx()
-            textAlign = android.graphics.Paint.Align.CENTER
+            textAlign = Paint.Align.CENTER
         }
 
         // Draws the 5 horizontal grid lines
@@ -863,10 +927,10 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
         }
 
         // For drawing the dates
-        val datePaint = android.graphics.Paint().apply {
+        val datePaint = Paint().apply {
             textSize = 18.sp.toPx() // Shrunk from 24sp
             color = android.graphics.Color.GRAY
-            textAlign = android.graphics.Paint.Align.CENTER
+            textAlign = Paint.Align.CENTER
         }
 
         // Plots the dates for each entry
@@ -1080,10 +1144,10 @@ fun SymptomLineGraph(data: Map<LocalDate, Int>, modifier: Modifier = Modifier) {
 
             drawIntoCanvas { canvas ->
                 val dateStr = "${entries[index].first.monthValue}/${entries[index].first.dayOfMonth}"
-                val textPaint = android.graphics.Paint().apply {
+                val textPaint = Paint().apply {
                     color = android.graphics.Color.GRAY
                     textSize = 28f
-                    textAlign = android.graphics.Paint.Align.CENTER
+                    textAlign = Paint.Align.CENTER
                 }
                 canvas.nativeCanvas.drawText(dateStr, point.x, canvasHeight + 40f, textPaint)
 
