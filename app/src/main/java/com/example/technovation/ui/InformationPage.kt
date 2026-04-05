@@ -1,7 +1,10 @@
 package com.example.technovation.ui
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Context
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.room3.Dao
 import androidx.room3.Database
 import androidx.room3.Entity
@@ -12,6 +15,14 @@ import androidx.room3.RoomDatabase
 import androidx.room3.TypeConverter
 import androidx.room3.TypeConverters
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class Type {ARTICLE, VIDEO}
 
@@ -89,17 +100,73 @@ class Converters {
 @TypeConverters(Converters::class)
 abstract class ResourcesDatabase : RoomDatabase(){
     abstract fun contentDao(): ContentDao
-    @Volatile private var INSTANCE: ResourcesDatabase? = null
 
-    //this means the database is only created once avoiding conflicts
-    fun getDatabase(context: Context): ResourcesDatabase {
-        return INSTANCE ?: synchronized(this) {
-            Room.databaseBuilder(
-                context.applicationContext,
-                ResourcesDatabase::class.java,
-                "health_content_db"
-            ).build().also { INSTANCE = it }
+    companion object {
+        @Volatile
+        private var INSTANCE: ResourcesDatabase? = null
+
+        //this means the database is only created once avoiding conflicts
+        fun getDatabase(context: Context): ResourcesDatabase {
+            return INSTANCE ?: synchronized(this) {
+                Room.databaseBuilder(
+                    context.applicationContext,
+                    ResourcesDatabase::class.java,
+                    "health_content_db"
+                ).build().also { INSTANCE = it }
+            }
         }
     }
+}
 
+data class FilterState(
+    val selectedKeywords: Set<Category> = emptySet(),
+    val selectedTypes: Set<Type> = emptySet()
+)
+
+class ResourcesViewModel(application: Application) : AndroidViewModel(application) {
+    private val dao = ResourcesDatabase.getDatabase(application).contentDao()
+
+    val searchQuery = MutableStateFlow("")
+    val filterState = MutableStateFlow(FilterState())
+
+    val saved: StateFlow<List<Content>> = dao.getSaved()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val articles: StateFlow<List<Content>> = dao.filterByType(Type.ARTICLE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val videos: StateFlow<List<Content>> = dao.filterByType(Type.VIDEO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val filteredContent: StateFlow<List<Content>> = combine(
+        searchQuery, filterState
+    ) { query, filter -> Pair(query, filter) }
+        .flatMapLatest { (query, filter) ->
+            dao.displayAll().map { list ->
+                list.filter { content ->
+                    val matchesQuery = query.isBlank() ||
+                            content.title.contains(query, ignoreCase = true)
+                    val matchesType = filter.selectedTypes.isEmpty() ||
+                            content.type in filter.selectedTypes
+                    val matchesKeyword = filter.selectedKeywords.isEmpty() ||
+                            content.category in filter.selectedKeywords
+                    matchesQuery && matchesType && matchesKeyword
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun updateSearchQuery(query: String) {
+        searchQuery.value = query
+    }
+
+    fun updateFilter(filter: FilterState) {
+        filterState.value = filter
+    }
+
+    fun toggleSaved(content: Content) {
+        viewModelScope.launch {
+            dao.updateSaved(content.contentId, !content.saved)
+        }
+    }
 }
