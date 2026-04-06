@@ -24,11 +24,12 @@ enum class AppPages(var title: String) {
     PastEntries(title = "PastEntries"),
     Stats(title="Stats"),
     Medication(title="Medication"),
+    ManageMedications(title="Manage Medications"),
     Audio(title="Audio"),
     MakeRecording(title="Make Recording"),
     PastRecordings(title="Past Recordings"),
-    HomePage(title="Home Page"),
-    ResourcesPage(title="Resources Page")
+    HomePage(title="Home"),
+    ResourcesPage(title="Resources")
 }
 
 @Composable
