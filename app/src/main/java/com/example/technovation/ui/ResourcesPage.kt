@@ -3,8 +3,42 @@ package com.example.technovation.ui
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import androidx.room3.Dao
 import androidx.room3.Database
 import androidx.room3.Entity
@@ -170,6 +204,73 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
     fun toggleSaved(content: Content) {
         viewModelScope.launch {
             dao.updateSaved(content.contentId, !content.saved)
+        }
+    }
+}
+
+@Composable
+fun ResourcesPage(
+    navController: NavController
+){
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ){
+        Box(modifier = Modifier.fillMaxWidth()){
+            //Search bar here
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        data class CategoryTile(val label: String, val icon: ImageVector, val route: String)
+
+        //placeholder symbols for now
+        val tiles = listOf(
+            CategoryTile("Articles", Icons.Default.Menu, "articles"),
+            CategoryTile("Healthy Recipes", Icons.Default.ShoppingCart, "recipes"),
+            CategoryTile("Exercise & Meditation Videos", Icons.Default.Person, "videos"),
+            CategoryTile("Saved", Icons.Default.Favorite, "saved")
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            tiles.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { tile ->
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(100.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = tile.icon,
+                                    contentDescription = tile.label,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = tile.label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    }
+                    if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }

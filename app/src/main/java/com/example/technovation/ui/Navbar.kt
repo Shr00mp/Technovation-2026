@@ -27,7 +27,8 @@ enum class AppPages(var title: String) {
     Audio(title="Audio"),
     MakeRecording(title="Make Recording"),
     PastRecordings(title="Past Recordings"),
-    HomePage(title="Home Page")
+    HomePage(title="Home Page"),
+    ResourcesPage(title="Resources Page")
 }
 
 @Composable
@@ -54,6 +55,22 @@ fun BottomNavigationBar(
                 disabledTextColor = Color.Gray
             ),
             onClick = { onTabClick(AppPages.HomePage) }
+        )
+
+        NavigationBarItem(
+            selected = AppPages.ResourcesPage.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            label = { Text(AppPages.ResourcesPage.title) },
+            icon = { Icon(Icons.Filled.Home, contentDescription = AppPages.ResourcesPage.title) },
+            colors = NavigationBarItemColors(
+                selectedIconColor = Color.Gray,
+                selectedTextColor = Color.Gray,
+                selectedIndicatorColor = Color.Blue,
+                unselectedIconColor = Color.Gray,
+                unselectedTextColor = Color.Gray,
+                disabledIconColor = Color.Gray,
+                disabledTextColor = Color.Gray
+            ),
+            onClick = { onTabClick(AppPages.ResourcesPage) }
         )
 
         // Journal Tab

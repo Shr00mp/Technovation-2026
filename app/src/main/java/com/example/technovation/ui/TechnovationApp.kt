@@ -45,6 +45,9 @@ fun TechnovationApp(
                     modifier = modifier,
                     allEntriesViewModel = allJournalEntries)
             }
+            composable(route = AppPages.ResourcesPage.title){
+                ResourcesPage(navController = navController)
+            }
             composable(route = AppPages.Journal.title) {
                 JournalPage(navController = navController,
                     modifier = modifier,
