@@ -1,7 +1,18 @@
 package com.example.technovation.ui
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,12 +61,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.technovation.R
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 data class Medication(
     val id: Int,
@@ -152,6 +165,49 @@ class MedicationViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
+    fun scheduleNotifications(context: Context, medication: Medication) {
+        // alarm manager is for handling device's internal clock
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        // The things viewmodel sends to the broadcast receiver
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            putExtra("MED_NAME", medication.name)
+            putExtra("MED_AMOUNT", medication.doseQuantity)
+            putExtra("MED_TYPE", medication.doseUnit)
+        }
+
+        // Intent only works when the app is awake and running
+        // Pending intent used for when the app is closed and helps send the intent anyway
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            medication.id, // is unique
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // The calendar tells the system when exactly the notification is scheduled for
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = System.currentTimeMillis()
+            set(Calendar.HOUR_OF_DAY, medication.time.hour)
+            set(Calendar.MINUTE, medication.time.minute)
+            set(Calendar.SECOND, 0)
+            add(Calendar.MINUTE,-1)
+        }
+
+        // If the time for the alarm today has already passed, then set notification for tomorrow
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            calendar.timeInMillis,
+            pendingIntent
+        )
     }
 }
 
@@ -427,6 +483,7 @@ fun ManageMedicationPage(
     }
 }
 
+@SuppressLint("ScheduleExactAlarm")
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -603,6 +660,11 @@ fun AddMedicationPage(
         Button(
             onClick = {
                 viewModel.saveMedication(medicationId)
+                val currentMed = viewModel.allMedication.find { it.name == viewModel.nameEntry }
+                currentMed?.let {
+                    // will only run if currentMed actually exists since we are using ? and let
+                    viewModel.scheduleNotifications(context, it)
+                }
                 navController.popBackStack()
             },
             modifier = Modifier
@@ -611,5 +673,44 @@ fun AddMedicationPage(
         ) {
             Text("Save", fontSize=20.sp)
         }
+    }
+}
+
+class NotificationReceiver : BroadcastReceiver() {
+
+    override fun onReceive(p0: Context, p1: Intent?) {
+        // This function is called when the broadcast receiver receives signal from system alarm
+        // The intent is the things sent by the viewmodel and contains data about the medication
+
+        val CHANNEL_ID = "medication_reminders"
+        val medName = p1?.getStringExtra("MED_NAME")
+        val medType = p1?.getStringExtra("MED_TYPE")
+        val medAmount = p1?.getIntExtra("MED_AMOUNT", 0)
+
+        // builds the channel for categorising notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Medication Reminders" // Hardcoded
+            val descriptionText = "Alarms for your medication schedule" // Hardcoded
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                p0.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        // This specifies what the notification will actually look like
+        val builder = NotificationCompat.Builder(p0, CHANNEL_ID)
+            .setSmallIcon(R.drawable.pill_icon)
+            .setContentTitle("Medication Reminder")
+            .setContentText("It's time to take your $medName medication. Take $medAmount $medType.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        // For showing the notification
+        // The next line is to do with getting the notification service on the actual device
+        val notificationManager = p0.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(medName.hashCode(), builder.build())  // id has to be an int, so can't directly use medName
     }
 }
