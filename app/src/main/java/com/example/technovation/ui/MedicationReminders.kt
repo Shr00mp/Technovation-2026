@@ -21,16 +21,27 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,6 +88,12 @@ class MedicationViewModel : ViewModel() {
             it.name.contains(searchQuery, ignoreCase = true)
         }.sortedBy { it.time }
 
+    // Variables for storing the entries when saving / editing medication reminder
+    var nameEntry by mutableStateOf("")
+    var doseEntry by mutableIntStateOf(1)
+    var doseUnitEntry by mutableStateOf("Pill")
+    var timeEntry by mutableStateOf(LocalTime.of(8, 0))
+
     init {
         // Manually assigning IDs for the prototype
         allMedication.addAll(listOf(
@@ -93,6 +110,48 @@ class MedicationViewModel : ViewModel() {
     fun deleteMedication(medication: Medication) {
         allMedication.remove(medication)
         completedTodayIds.remove(medication.id)
+    }
+
+    fun loadMedicationForEdit(id: Int) {
+        val med = allMedication.find { it.id == id }
+        if (med != null) {
+            // If the medication already exists, then we use OG values
+            nameEntry = med.name
+            doseEntry = med.doseQuantity
+            doseUnitEntry = med.doseUnit
+            timeEntry = med.time
+        } else {
+            // Is for when id = -1 to indicate make a new entry
+            nameEntry = ""
+            doseEntry = 1
+            doseUnitEntry = "Pill"
+            timeEntry = LocalTime.of(8, 0)
+        }
+    }
+
+    fun saveMedication(id: Int) {
+        if (id == -1) {
+            // Create new ID by finding max and then +1 to it
+            val newId = (allMedication.maxOfOrNull { it.id } ?: 0) + 1
+            allMedication.add(Medication(
+                id=newId,
+                name=nameEntry,
+                doseQuantity = doseEntry,
+                doseUnit=doseUnitEntry,
+                time=timeEntry))
+        } else {
+            // Update existing medication reminder
+            val index = allMedication.indexOfFirst { it.id == id }
+            if (index != -1) {
+                allMedication[index] = Medication(
+                    id=id,
+                    name=nameEntry,
+                    doseQuantity = doseEntry,
+                    doseUnit=doseUnitEntry,
+                    time=timeEntry
+                )
+            }
+        }
     }
 }
 
@@ -129,28 +188,26 @@ fun MedicationTaskCard(
                 Column {
                     Text(
                         text = currMedication.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 25.sp
                     )
                     Text(
-                        text = "${currMedication.doseQuantity} ${currMedication.doseUnit} • ${currMedication.time.format(
+                        text = "${currMedication.doseQuantity} ${currMedication.doseUnit} | ${currMedication.time.format(
                             DateTimeFormatter.ofPattern("h:mm a"))}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 18.sp
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Single "Done" Action
             Button(
                 onClick = { onDoneClick() },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small,
                 enabled = !isCompleted
             ) {
-                Text(if (isCompleted) "Completed" else "Done")
+                Text(if (isCompleted) "Completed" else "Done", fontSize=18.sp)
             }
         }
     }
@@ -266,9 +323,10 @@ fun ManageMedicationCard(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = medication.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text(text = "${medication.doseQuantity} ${medication.doseUnit}", style = MaterialTheme.typography.bodySmall)
-                Text(text = medication.time.format(DateTimeFormatter.ofPattern("h:mm a")), style = MaterialTheme.typography.bodySmall)
+                Text(text = medication.name, fontWeight = FontWeight.Bold, fontSize = 25.sp)
+                Text(text = "${medication.doseQuantity} ${medication.doseUnit} | " +
+                        "${medication.time.format(DateTimeFormatter.ofPattern("h:mm a"))} "
+                    , fontSize=18.sp)
             }
 
             Column(horizontalAlignment = Alignment.End) {
@@ -280,7 +338,7 @@ fun ManageMedicationCard(
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(20.dp)
                         )
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
                     }
                 }
                 TextButton(onClick = onEdit) {
@@ -290,7 +348,7 @@ fun ManageMedicationCard(
                             contentDescription = "Edit",
                             modifier = Modifier.size(20.dp)
                         )
-                        Text("Edit")
+                        Text("Edit", fontSize = 18.sp)
                     }
                 }
             }
@@ -328,7 +386,9 @@ fun ManageMedicationPage(
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = {},
+            onClick = {
+                navController.navigate(AppPages.AddMedications.createRouteForAddingMedication(id=-1))
+            },
             modifier = Modifier
                 .height(60.dp)
                 .width(350.dp),
@@ -339,7 +399,7 @@ fun ManageMedicationPage(
         Spacer(modifier = Modifier.height(30.dp))
 
         // Search bar
-        androidx.compose.material3.OutlinedTextField(
+        OutlinedTextField(
             value = viewModel.searchQuery,
             onValueChange = { viewModel.searchQuery = it },
             modifier = Modifier.fillMaxWidth(),
@@ -358,19 +418,198 @@ fun ManageMedicationPage(
                 ManageMedicationCard(
                     medication = medication,
                     onDelete = { viewModel.deleteMedication(medication) },
-                    onEdit = {  }
+                    onEdit = {
+                        navController.navigate(AppPages.AddMedications.createRouteForAddingMedication(id=medication.id))
+                    }
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddMedicationPage(
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: MedicationViewModel = viewModel()
+    viewModel: MedicationViewModel = viewModel(),
+    medicationId: Int = -1, // Is -1 to add and is actual medication id for edit
 ) {
+    Column(
+        modifier=modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // When page starts we need to reload the medication for editing / adding
+        LaunchedEffect(medicationId) {
+            viewModel.loadMedicationForEdit(medicationId)
+        }
 
+        Text(
+            text = if (medicationId == -1) "Add Medication" else "Edit Medication",
+            fontSize = 30.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp)
+        )
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Name field
+        Text(
+            text = "Enter the medication name",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        OutlinedTextField(
+            value = viewModel.nameEntry,
+            onValueChange = { viewModel.nameEntry = it },
+            label = { Text("Medication Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Dosage stepper
+        Text(
+            text = "Enter dosage amount",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FilledIconButton(
+                    onClick = { if (viewModel.doseEntry > 1) viewModel.doseEntry-- },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text("-", fontSize = 30.sp)
+                }
+
+                Text(
+                    text = viewModel.doseEntry.toString(),
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    fontSize = 23.sp
+                )
+
+                FilledIconButton(
+                    onClick = { viewModel.doseEntry++ },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text("+", fontSize = 28.sp)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Select dose type
+        val options = listOf("Pill", "Tablet", "Capsule", "Syrup", "Other")
+        var expanded by remember { mutableStateOf(false) }
+
+        Text(
+            text = "Select the dosage type",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = viewModel.doseUnitEntry,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Dosage Type") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                options.forEach { selection ->
+                    DropdownMenuItem(
+                        text = { Text(selection) },
+                        onClick = {
+                            viewModel.doseUnitEntry = selection
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Time
+        val context = androidx.compose.ui.platform.LocalContext.current
+        Text(
+            text = "Select the medication time",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text="Currently selected time: ${
+                viewModel.timeEntry.format(
+                    DateTimeFormatter.ofPattern(
+                        "h:mm a"
+                    )
+                )
+            }",
+            fontSize = 17.sp,
+            modifier = Modifier
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        OutlinedButton(
+            onClick = {
+                val timePicker = android.app.TimePickerDialog(
+                    context,
+                    { _, hour, minute -> viewModel.timeEntry = LocalTime.of(hour, minute) },
+                    viewModel.timeEntry.hour,
+                    viewModel.timeEntry.minute,
+                    false
+                )
+                timePicker.show()
+            },
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        ) {
+            Text("Select New Time", fontSize=15.sp)
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Save button
+        Button(
+            onClick = {
+                viewModel.saveMedication(medicationId)
+                navController.popBackStack()
+            },
+            modifier = Modifier
+                .height(60.dp)
+                .width(350.dp),
+        ) {
+            Text("Save", fontSize=20.sp)
+        }
+    }
 }

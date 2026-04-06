@@ -30,7 +30,11 @@ enum class AppPages(var title: String) {
     MakeRecording(title="Make Recording"),
     PastRecordings(title="Past Recordings"),
     HomePage(title="Home"),
-    ResourcesPage(title="Resources")
+    ResourcesPage(title="Resources");
+
+    fun createRouteForAddingMedication(id: Int): String {
+        return "$title/$id"
+    }
 }
 
 @Composable
@@ -60,7 +64,7 @@ fun BottomNavigationBar(
         )
 
         NavigationBarItem(
-            selected = AppPages.ResourcesPage.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            selected = AppPages.ResourcesPage.title == currentDestination?.route,
             label = { Text(AppPages.ResourcesPage.title) },
             icon = { Icon(Icons.Filled.Home, contentDescription = AppPages.ResourcesPage.title) },
             colors = NavigationBarItemColors(
@@ -77,7 +81,7 @@ fun BottomNavigationBar(
 
         // Journal Tab
         NavigationBarItem(
-            selected = AppPages.Journal.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            selected = AppPages.Journal.title == currentDestination?.route,
             label = { Text(AppPages.Journal.title) },
             icon = { Icon(Icons.Filled.DateRange, contentDescription = AppPages.Journal.title) },
             colors = NavigationBarItemColors(
@@ -94,7 +98,7 @@ fun BottomNavigationBar(
 
         // Medication Tab
         NavigationBarItem(
-            selected = AppPages.Medication.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            selected = AppPages.Medication.title == currentDestination?.route,
             label = { Text(AppPages.Medication.title) },
             icon = { Icon(Icons.Filled.CheckCircle, contentDescription = AppPages.Medication.title) },
             colors = NavigationBarItemColors(
@@ -111,7 +115,7 @@ fun BottomNavigationBar(
 
         // Record Audio Tab
         NavigationBarItem(
-            selected = AppPages.Audio.title == currentDestination?.route, // Mark as selected if current route matches Home route
+            selected = AppPages.Audio.title == currentDestination?.route,
             label = { Text(AppPages.Audio.title) },
             icon = { Icon(Icons.Filled.Person, contentDescription = AppPages.Audio.title) },
             colors = NavigationBarItemColors(
