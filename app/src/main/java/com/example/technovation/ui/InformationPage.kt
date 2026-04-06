@@ -76,8 +76,11 @@ interface ContentDao {
    @Query("SELECT * FROM content WHERE type = :type")
    fun filterByType(type: Type): Flow<List<Content>>
 
-   @Query("UPDATE content SET saved = :saved WHERE id = :id")
+   @Query("UPDATE content SET saved = :saved WHERE contentId = :id")
    suspend fun updateSaved(id: Int, saved: Boolean)
+
+   @Query("SELECT * FROM content WHERE contentId = :id")
+   fun getById(id: Int): Flow<Content?>
 }
 
 //These are needed to convert from the self-defined enum classes to actual data types
@@ -111,8 +114,8 @@ abstract class ResourcesDatabase : RoomDatabase(){
                 Room.databaseBuilder(
                     context.applicationContext,
                     ResourcesDatabase::class.java,
-                    "health_content_db"
-                ).build().also { INSTANCE = it }
+                    "Resources_Database"
+                ).createFromAsset("Resources_Database").build().also { INSTANCE = it }
             }
         }
     }
