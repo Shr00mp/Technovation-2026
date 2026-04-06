@@ -3,6 +3,8 @@ package com.example.technovation.ui
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,27 +19,41 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.room3.Dao
 import androidx.room3.Database
@@ -61,11 +77,11 @@ import kotlinx.coroutines.launch
 enum class Type {ARTICLE, VIDEO}
 
 enum class Category {
-
+    EXERCISE, MEDITATION
 }
 
 //Creating content of an item as a class for the database
-@Entity(tableName = "content")
+@Entity(tableName = "Resources_Database")
 data class Content(
     @PrimaryKey val contentId: Int,
     val title: String,
@@ -74,7 +90,6 @@ data class Content(
     //"?" makes the field optional
     val htmlContent: String? = null,
     val videoUrl: String? = null,
-    val caption: String? = null,
     val saved: Boolean = false,
     val recommended: Boolean = false
     )
@@ -82,17 +97,17 @@ data class Content(
 //the Data Access Object is an interface defining SQL queries to database
 @Dao
 interface ContentDao {
-    @Query("SELECT * FROM Content")
+    @Query("SELECT * FROM Resources_Database")
     fun displayAll(): Flow<List<Content>>
 
-    @Query("SELECT * FROM Content WHERE recommended = 1")
+    @Query("SELECT * FROM Resources_Database WHERE recommended = 1")
     fun displayRecommended(): Flow<List<Content>>
 
-    @Query("SELECT * FROM Content WHERE saved = 1")
+    @Query("SELECT * FROM Resources_Database WHERE saved = 1")
     fun getSaved(): Flow<List<Content>>
 
     //Selects articles where the title contains some of the query, and applying filters
-    @Query("""SELECT * FROM Content
+    @Query("""SELECT * FROM Resources_Database
         WHERE (:query = '' OR title LIKE '%' ||:query|| '%')
         AND (:typeFilter = '' OR type = :typeFilter)
         AND (:categoryFilter = '' OR category = :categoryFilter)
@@ -104,16 +119,16 @@ interface ContentDao {
         categoryFilter: String
     ): Flow<List<Content>>
 
-   @Query("SELECT * FROM content WHERE category = :category")
+   @Query("SELECT * FROM Resources_Database WHERE category = :category")
    fun filterByCategory(category: Category): Flow<List<Content>>
 
-   @Query("SELECT * FROM content WHERE type = :type")
+   @Query("SELECT * FROM Resources_Database WHERE type = :type")
    fun filterByType(type: Type): Flow<List<Content>>
 
-   @Query("UPDATE content SET saved = :saved WHERE contentId = :id")
+   @Query("UPDATE Resources_Database SET saved = :saved WHERE contentId = :id")
    suspend fun updateSaved(id: Int, saved: Boolean)
 
-   @Query("SELECT * FROM content WHERE contentId = :id")
+   @Query("SELECT * FROM Resources_Database WHERE contentId = :id")
    fun getById(id: Int): Flow<Content?>
 }
 
@@ -149,7 +164,7 @@ abstract class ResourcesDatabase : RoomDatabase(){
                     context.applicationContext,
                     ResourcesDatabase::class.java,
                     "Resources_Database"
-                ).createFromAsset("Resources_Database").build().also { INSTANCE = it }
+                ).createFromAsset("Resources_Database.db").build().also { INSTANCE = it }
             }
         }
     }
@@ -206,20 +221,80 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
             dao.updateSaved(content.contentId, !content.saved)
         }
     }
+
+    fun getContentById(id: Int): Flow<Content?> = dao.getById(id)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ArticleDetailScreen(
+    contentId: Int,
+    viewModel: ResourcesViewModel,
+    navController: NavController
+) {
+    val content by viewModel.getContentById(contentId)
+        .collectAsStateWithLifecycle(initialValue = null)
+
+    content?.let { article ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(article.title) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            AndroidView(
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        webViewClient = WebViewClient()
+                        settings.useWideViewPort = true
+                        settings.loadWithOverviewMode = true
+                    }
+                },
+                update = { webView ->
+                    val html = """
+                        <html><head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                          body { font-family: sans-serif; font-size: 16px; 
+                                 line-height: 1.6; padding: 12px; }
+                          img { max-width: 100%; height: auto; }
+                        </style>
+                        </head><body>${article.htmlContent ?: ""}</body></html>
+                    """.trimIndent()
+                    webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            )
+        }
+    } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResourcesPage(
-    navController: NavController
+    navController: NavController,
+    viewModel: ResourcesViewModel
 ){
+    val articles by viewModel.articles.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ){
-        Box(modifier = Modifier.fillMaxWidth()){
-            //Search bar here
+        Box(modifier = Modifier.fillMaxWidth().semantics {isTraversalGroup = true})
+        {
+            //search bar here
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -269,6 +344,41 @@ fun ResourcesPage(
                         }
                     }
                     if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Articles",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        articles.forEach { article ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clickable { navController.navigate("detail/${article.contentId}") },
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = article.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+//                    article.caption?.let {
+//                        Spacer(modifier = Modifier.height(4.dp))
+//                        Text(
+//                            text = it,
+//                            style = MaterialTheme.typography.bodySmall,
+//                            color = MaterialTheme.colorScheme.onSurfaceVariant
+//                        )
+//                    }
                 }
             }
         }
