@@ -26,6 +26,7 @@ fun TechnovationApp(
     val allJournalEntries: AllJournalEntries = viewModel()
     val allAudioResults: AllAudioResults = viewModel()
     val resourcesViewModel: ResourcesViewModel = viewModel()
+    val allMedicationsViewModel: MedicationViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -88,7 +89,26 @@ fun TechnovationApp(
             composable(route = AppPages.Medication.title) {
                 MedicationPage(
                     navController = navController,
-                    modifier = modifier
+                    modifier = modifier,
+                    viewModel = allMedicationsViewModel
+                )
+            }
+            composable(route = AppPages.ManageMedications.title) {
+                ManageMedicationPage(
+                    navController = navController,
+                    modifier = modifier,
+                    viewModel = allMedicationsViewModel
+                )
+            }
+            composable(
+                route = "${AppPages.AddMedications.title}/{medicationId}",
+                arguments = listOf(navArgument("medicationId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getInt("medicationId") ?: -1
+                AddMedicationPage(
+                    navController = navController,
+                    viewModel = allMedicationsViewModel,
+                    medicationId = id
                 )
             }
             composable(route = AppPages.Audio.title) {
