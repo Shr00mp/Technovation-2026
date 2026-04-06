@@ -25,6 +25,7 @@ enum class AppPages(var title: String) {
     Stats(title="Stats"),
     Medication(title="Medication"),
     ManageMedications(title="Manage Medications"),
+    AddMedications(title = "Add Medications"),
     Audio(title="Audio"),
     MakeRecording(title="Make Recording"),
     PastRecordings(title="Past Recordings"),

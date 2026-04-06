@@ -16,14 +16,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -61,6 +69,14 @@ class MedicationViewModel : ViewModel() {
             .filter { it.id !in completedTodayIds }
             .sortedBy { it.time }
 
+    // For searching medications in the Manage page
+    var searchQuery by mutableStateOf("")
+
+    val filteredMedications: List<Medication>
+        get() = allMedication.filter {
+            it.name.contains(searchQuery, ignoreCase = true)
+        }.sortedBy { it.time }
+
     init {
         // Manually assigning IDs for the prototype
         allMedication.addAll(listOf(
@@ -74,7 +90,10 @@ class MedicationViewModel : ViewModel() {
         completedTodayIds.add(medication.id)
     }
 
-
+    fun deleteMedication(medication: Medication) {
+        allMedication.remove(medication)
+        completedTodayIds.remove(medication.id)
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -220,12 +239,135 @@ fun MedicationPage(
             }
         }
     }
-
-
 }
 
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun ManageMedicationCard(
+    medication: Medication,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.pill_icon),
+                contentDescription = null,
+                modifier = Modifier.size(50.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = medication.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(text = "${medication.doseQuantity} ${medication.doseUnit}", style = MaterialTheme.typography.bodySmall)
+                Text(text = medication.time.format(DateTimeFormatter.ofPattern("h:mm a")), style = MaterialTheme.typography.bodySmall)
+            }
+
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onDelete) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                TextButton(onClick = onEdit) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text("Edit")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ManageMedicationPage(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    viewModel: MedicationViewModel = viewModel()
+) {
+    val scrollState = rememberScrollState()
+    val medsToShow = viewModel.filteredMedications
+
+    Column(
+        modifier=modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "Manage your Medication Reminders",
+            fontSize = 30.sp,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = {},
+            modifier = Modifier
+                .height(60.dp)
+                .width(350.dp),
+        ) {
+            Text("Add New Medication Reminder", fontSize=20.sp)
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Search bar
+        androidx.compose.material3.OutlinedTextField(
+            value = viewModel.searchQuery,
+            onValueChange = { viewModel.searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Search your medication reminders") },
+            placeholder = { Text("Type medication name...") },
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (medsToShow.isEmpty()) {
+            Text("No medications found.", modifier = Modifier.padding(top = 20.dp))
+        } else {
+            medsToShow.forEach { medication ->
+                ManageMedicationCard(
+                    medication = medication,
+                    onDelete = { viewModel.deleteMedication(medication) },
+                    onEdit = {  }
+                )
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun AddMedicationPage(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: MedicationViewModel = viewModel()

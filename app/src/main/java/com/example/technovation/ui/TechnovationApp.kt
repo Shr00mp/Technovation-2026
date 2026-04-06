@@ -100,6 +100,13 @@ fun TechnovationApp(
                     viewModel = allMedicationsViewModel
                 )
             }
+            composable(route = AppPages.AddMedications.title) {
+                AddMedicationPage(
+                    navController = navController,
+                    modifier = modifier,
+                    viewModel = allMedicationsViewModel
+                )
+            }
             composable(route = AppPages.Audio.title) {
                 AudioPage(
                     navController = navController,
