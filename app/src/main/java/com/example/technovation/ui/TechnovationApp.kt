@@ -9,10 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -23,6 +25,7 @@ fun TechnovationApp(
     val currentDestination = navBackStackEntry?.destination
     val allJournalEntries: AllJournalEntries = viewModel()
     val allAudioResults: AllAudioResults = viewModel()
+    val resourcesViewModel: ResourcesViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -44,6 +47,21 @@ fun TechnovationApp(
                 Home(navController = navController,
                     modifier = modifier,
                     allEntriesViewModel = allJournalEntries)
+            }
+            composable(route = AppPages.ResourcesPage.title){
+                ResourcesPage(navController = navController,
+                    viewModel = resourcesViewModel)
+            }
+            composable(
+                route = "detail/{contentId}",
+                arguments = listOf(navArgument("contentId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getInt("contentId") ?: return@composable
+                ArticleDetailScreen(
+                    contentId = id,
+                    viewModel = resourcesViewModel,
+                    navController = navController
+                )
             }
             composable(route = AppPages.Journal.title) {
                 JournalPage(navController = navController,
