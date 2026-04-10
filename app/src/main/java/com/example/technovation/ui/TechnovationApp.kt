@@ -50,7 +50,8 @@ fun TechnovationApp(
             }
             composable(route = AppPages.ResourcesPage.title){
                 ResourcesPage(navController = navController,
-                    viewModel = resourcesViewModel)
+                    viewModel = resourcesViewModel,
+                    allEntriesViewModel = allJournalEntries)
             }
             composable(
                 route = "detail/{contentId}",
