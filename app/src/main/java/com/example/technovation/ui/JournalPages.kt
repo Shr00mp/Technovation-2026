@@ -1306,10 +1306,12 @@ fun StatisticsPage(
     }
 
     Column(
-        modifier = Modifier
+        modifier=modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
     ) {
         Text(
             "Your Progress",
