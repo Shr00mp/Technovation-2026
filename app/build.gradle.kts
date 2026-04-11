@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.room3.runtime)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,4 +69,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.10.1")
     ksp("androidx.room3:room3-compiler:3.0.0-alpha02")
+    implementation(libs.androidx.compose.material.icons.extended)
 }

@@ -309,9 +309,8 @@ fun MedicationPage(
                 fontSize = 30.sp,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .padding(0.dp, 15.dp)
             )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(35.dp))
 
             Text(
                 "Tasks left for today",
@@ -436,10 +435,9 @@ fun ManageMedicationPage(
             fontSize = 30.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(35.dp))
 
         Button(
             onClick = {
@@ -510,10 +508,9 @@ fun AddMedicationPage(
             fontSize = 30.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(55.dp))
 
         // Name field
         Text(

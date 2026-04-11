@@ -104,10 +104,9 @@ fun JournalPage(
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier=Modifier.height(40.dp))
+        Spacer(modifier=Modifier.height(55.dp))
 
         Button(
             onClick = {
@@ -435,18 +434,15 @@ fun NewJournalEntry(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Spacer(modifier=Modifier.height(40.dp))
-
         // Title
         Text(
             "Make a New Entry",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier=Modifier.height(40.dp))
+        Spacer(modifier=Modifier.height(55.dp))
 
         // Mood card
         Card(
@@ -831,17 +827,14 @@ fun PastEntries(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top)
     {
-        Spacer(modifier=Modifier.height(40.dp))
-
         Text(
             "All Past Entries",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier=Modifier.height(40.dp))
+        Spacer(modifier=Modifier.height(55.dp))
 
         if (allEntriesViewModel.history.isEmpty()) {
             Text("No entries yet. Start journaling!")
@@ -1193,8 +1186,9 @@ fun StatisticsPage(
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
+
+        Spacer(modifier=Modifier.height(15.dp))
 
         // Mood line graph
         Card(
