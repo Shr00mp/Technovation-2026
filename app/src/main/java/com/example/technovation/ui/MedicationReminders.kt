@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,6 +67,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.technovation.R
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -219,6 +221,14 @@ fun MedicationTaskCard(
     isCompleted: Boolean,
     onDoneClick: () -> Unit
 ) {
+    // Users suggested that there should be more than two states for each task
+    val currTime = LocalTime.now()
+    val isOverdue = currTime.isAfter(currMedication.time) && !isCompleted
+    val isUpcoming = currTime.isBefore(currMedication.time) &&
+            currTime.plusMinutes(15).isAfter(currMedication.time) &&
+            !isCompleted
+
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -261,9 +271,38 @@ fun MedicationTaskCard(
                 onClick = { onDoneClick() },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small,
-                enabled = !isCompleted
+                enabled = !isCompleted,
+                colors =
+                    if (isCompleted) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    } else if (isOverdue) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    } else if (isUpcoming) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = androidx.compose.ui.graphics.Color.Yellow, // Note to self: Yellow is slightly too bright here, do custom
+                            contentColor = androidx.compose.ui.graphics.Color.Black
+                        )
+                    }
+                    else {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
             ) {
-                Text(if (isCompleted) "Completed" else "Done", fontSize=18.sp)
+                Text(
+                    if (isCompleted) {"Done"}
+                    else if (isOverdue) {"Mark as done (Overdue)"}
+                    else if (isUpcoming) {"Mark as done (Upcoming)"}
+                    else { "Mark as Done (Not Upcoming)"},
+                    fontSize = 20.sp
+                )
             }
         }
     }
