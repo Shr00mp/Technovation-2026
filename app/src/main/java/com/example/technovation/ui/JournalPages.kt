@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,8 +33,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,9 +46,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -69,11 +73,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -90,7 +94,38 @@ fun JournalPage(
     var showDialog by remember {mutableStateOf(false)}
 
     if (showDialog) {
-        AlreadyMadeEntryDialogue(onDismiss = {showDialog= false})
+        AlreadyMadeEntryDialogue(
+            onDismiss = {showDialog= false},
+            onEdit = {
+                var entry = allEntriesViewModel.history.first() // Store as something random first
+                for (anEntry in allEntriesViewModel.history) {
+                    if (anEntry.date == LocalDate.now()) {
+                        val entry = anEntry
+                        break
+                    }
+                }
+                // Originally the symptoms are already togg [led for this entry so we needed to reset it
+                // Otherwise old selections still apply when editing
+                symptomsViewModel.resetSelections()
+                symptomsViewModel.loadValuesForEditing(entry) // loads mood, text and date
+                // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
+
+                // Users mentioned it was better to save previous selections instead of completely starting over
+                entry.physical_symptoms_entry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physical_symptoms)
+                }
+                entry.mental_symptoms_entry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mental_symptoms)
+                }
+                entry.activities_entry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
+                }
+
+                navController.navigate(AppPages.NewEntry.title)
+
+                showDialog = false // close dialogue
+            }
+        )
     }
     Column(
         modifier=modifier
@@ -180,6 +215,12 @@ class SymptomsViewModel: ViewModel() {
 
     val allSymptomsNames = (physical_symptoms + mental_symptoms).map { it.name }
 
+    // in order to allow user to edit their past entries, we need to store their mood, text and date in the viewmodel
+    // so that it can be filled in correctly
+    var tempMood by mutableStateOf(3)
+    var tempText by mutableStateOf("")
+    var pastEntryDate by mutableStateOf(LocalDate.now())
+
     // Is for selecting the Symptom with provided id and in one of the three lists
     fun toggleSymptom(id: Int, curr_list: MutableList<Symptom>) {
         val index = curr_list.indexOfFirst { it.id == id }
@@ -229,6 +270,9 @@ class SymptomsViewModel: ViewModel() {
         for (i in activities_list.indices) {
             activities_list[i] = activities_list[i].copy(selected = false)
         }
+        tempMood = 3
+        tempText = ""
+        pastEntryDate = LocalDate.now()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -294,6 +338,12 @@ class SymptomsViewModel: ViewModel() {
                         entry.mental_symptoms_entry.any { it.name.equals(target, ignoreCase = true) }
             }
         }.toSortedMap()
+    }
+
+    fun loadValuesForEditing(entry: Entry) {
+        pastEntryDate = entry.date
+        tempMood = entry.mood
+        tempText = entry.text_in_journal
     }
 }
 
@@ -382,14 +432,14 @@ fun NewJournalEntry(
     symptomsViewModel: SymptomsViewModel = viewModel(),
     allEntriesViewModel: AllJournalEntries = viewModel(),
     navController: NavController) {
-        var journalText by remember {mutableStateOf("")}
+
         val voiceInputHandler = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { activityResult ->
             if(activityResult.resultCode == Activity.RESULT_OK) {
                 val resultText = activityResult.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 resultText?.get(0)?.let{ recordedText ->
-                    journalText += recordedText
+                    symptomsViewModel.tempText += recordedText
                 }
             }
         }
@@ -413,7 +463,6 @@ fun NewJournalEntry(
 
     // State for tracking dialogue (0 = none, 1 = physical, 2 = mental, 3 = activity)
     var activeDialogType by remember { mutableStateOf(0) }
-    var selectedMood by remember {mutableStateOf(3)} // default mood is average
 
     // Dialogue does not show only when state is 0
     if (activeDialogType != 0) {
@@ -458,7 +507,9 @@ fun NewJournalEntry(
             )
             val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom=20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 moodEmojis.forEachIndexed { index, emoji ->
@@ -468,8 +519,8 @@ fun NewJournalEntry(
                             text = emoji,
                             fontSize = 30.sp,
                             modifier = Modifier
-                                .clickable { selectedMood = level }
-                                .alpha(if (selectedMood == level) 1f else 0.3f)
+                                .clickable { symptomsViewModel.tempMood = level }
+                                .alpha(if (symptomsViewModel.tempMood == level) 1f else 0.3f)
                         )
                     }
                 }
@@ -595,8 +646,8 @@ fun NewJournalEntry(
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(16.dp)){
             TextField(
-                value=journalText,
-                onValueChange = { journalText = it },
+                value=symptomsViewModel.tempText,
+                onValueChange = { symptomsViewModel.tempText = it },
                 label = { Text("Write about how your day went") },
                 modifier = Modifier.padding(16.dp),
                 colors = TextFieldDefaults.colors(
@@ -625,12 +676,12 @@ fun NewJournalEntry(
         Button(
             onClick = {
                 val newEntry = Entry(
-                    date = LocalDate.now(),
-                    mood = selectedMood,
+                    date = symptomsViewModel.pastEntryDate,
+                    mood = symptomsViewModel.tempMood,
                     physical_symptoms_entry = symptomsViewModel.getSelectedPhysicalSymptoms(),
                     mental_symptoms_entry = symptomsViewModel.getSelectedMentalSymptoms(),
                     activities_entry = symptomsViewModel.getSelectedActivities(),
-                    text_in_journal = journalText
+                    text_in_journal = symptomsViewModel.tempText
                 )
                 allEntriesViewModel.addEntry(newEntry)
                 navController.navigate(AppPages.Journal.title)
@@ -719,23 +770,52 @@ class AllJournalEntries: ViewModel() {
     }
 
     fun addEntry(entry: Entry) {
-        history.add(0, entry)
+        // I have now added a function that allows the user to edit past entries
+        // This means if a new entry is created every time, there is the risk of duplications
+        val index = history.indexOfFirst { it.date == entry.date }
+        if (index == -1) {
+            history.add(0, entry)
+        } else {
+            history[index] = entry
+        }
     }
 
-    fun hasEntryForDay(date_to_check: LocalDate): Boolean {
+    fun hasEntryForDay(dateToCheck: LocalDate): Boolean {
         for (entry in history) {
-            if (entry.date == date_to_check) {
+            if (entry.date == dateToCheck) {
                 return true
             }
         }
         return false
     }
+
+    fun deleteEntry(date: LocalDate) {
+        for (entry in history) {
+            if (entry.date == date) {
+                history.remove(entry)
+                break
+            }
+        }
+    }
+
+    fun updateEntry(date: LocalDate, updatedEntry: Entry) {
+        for ((index, value) in history.withIndex()) {
+            if (history[index].date == date) {
+                history[index] = updatedEntry
+                break
+            }
+        }
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PastEntryCard(entry: Entry) {
-    var day_of_week = entry.date.dayOfWeek
+fun PastEntryCard(
+    entry: Entry,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
+) {
+    var dayOfWeek = entry.date.dayOfWeek
     var month = entry.date.month
     var year = entry.date.year
     Card(
@@ -752,8 +832,32 @@ fun PastEntryCard(entry: Entry) {
             verticalArrangement = Arrangement.Top
         ) {
             Text(
-                "$day_of_week, $month $year"
+                "$dayOfWeek, $month $year"
             )
+
+            Row {
+                TextButton(onClick = onDelete) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
+                    }
+                }
+                TextButton(onClick = onEdit) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text("Edit", fontSize = 18.sp)
+                    }
+                }
+            }
 
             val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
             Row(
@@ -818,6 +922,7 @@ fun PastEntryCard(entry: Entry) {
 fun PastEntries(
     modifier: Modifier = Modifier,
     allEntriesViewModel: AllJournalEntries = viewModel(),
+    symptomsViewModel: SymptomsViewModel,
     navController: NavController
 ) {
     Column(modifier=modifier
@@ -840,7 +945,30 @@ fun PastEntries(
             Text("No entries yet. Start journaling!")
         } else {
             allEntriesViewModel.history.forEach { entry ->
-                PastEntryCard(entry)
+                PastEntryCard(
+                    entry,
+                    onDelete = {allEntriesViewModel.deleteEntry(entry.date)},
+                    onEdit = {
+                        // Originally the symptoms are already toggled for this entry so we needed to reset it
+                        // Otherwise old selections still apply when editing
+                        symptomsViewModel.resetSelections()
+                        symptomsViewModel.loadValuesForEditing(entry) // loads mood, text and date
+                        // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
+
+                        // Users mentioned it was better to save previous selections instead of completely starting over
+                        entry.physical_symptoms_entry.forEach { pastSymptom ->
+                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physical_symptoms)
+                        }
+                        entry.mental_symptoms_entry.forEach { pastSymptom ->
+                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mental_symptoms)
+                        }
+                        entry.activities_entry.forEach { pastSymptom ->
+                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
+                        }
+
+                        navController.navigate(AppPages.NewEntry.title)
+                    }
+                    )
                 Spacer(modifier = Modifier.height(30.dp))
             }
         }
@@ -850,25 +978,23 @@ fun PastEntries(
 @Composable
 fun AlreadyMadeEntryDialogue(
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit
 ) {
-    Dialog(onDismissRequest = { onDismiss() }) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text(
-                text = "You have already made an entry today. See you again tomorrow!",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(Alignment.Center),
-                textAlign = TextAlign.Center,
-            )
+    AlertDialog(
+        onDismissRequest = { onDismiss },
+        text = { Text("You have already made an entry today. \nYou may choose to edit your past entry.") },
+        confirmButton = {
+            Button(onClick = { onEdit() }) {
+                Text("Edit result")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onDismiss() }) {
+                Text("Close")
+            }
         }
-    }
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -1040,7 +1166,9 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
     val weeklyData = viewModel.getWeeklySymptomCounts(history, searchQuery)
 
     Card(
-        modifier = Modifier.fillMaxWidth().padding(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp),
         elevation = CardDefaults.cardElevation(5.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -1053,7 +1181,9 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
             )
 
             // Container for search bar
-            Box(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()) {
                 CustomizableSearchBar(
                     query = searchQuery,
                     onQueryChange = { searchQuery = it },
@@ -1242,7 +1372,9 @@ fun StatisticsPage(
                 )
                 improvements.forEach { text ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
                     ) {
                         Text(text, modifier = Modifier.padding(16.dp))

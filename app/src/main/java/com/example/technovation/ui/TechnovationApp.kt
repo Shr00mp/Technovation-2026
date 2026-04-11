@@ -26,6 +26,7 @@ fun TechnovationApp(
     val allAudioResults: AllAudioResults = viewModel()
     val resourcesViewModel: ResourcesViewModel = viewModel()
     val allMedicationsViewModel: MedicationViewModel = viewModel()
+    val symptomsViewModel: SymptomsViewModel = viewModel()
     val canNavigateBack = navController.previousBackStackEntry != null
 
     Scaffold(
@@ -76,23 +77,27 @@ fun TechnovationApp(
             composable(route = AppPages.Journal.title) {
                 JournalPage(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel)
             }
             composable(route = AppPages.NewEntry.title) {
                 NewJournalEntry(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel)
             }
             composable(route = AppPages.PastEntries.title) {
                 PastEntries(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel)
             }
             composable(route = AppPages.Stats.title) {
                 StatisticsPage(
                     navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel
                 )
             }
             composable(route = AppPages.Medication.title) {

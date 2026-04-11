@@ -45,7 +45,38 @@ fun Home(
     medicationsViewModel: MedicationViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
     if (showDialog) {
-        AlreadyMadeEntryDialogue(onDismiss = {showDialog= false})
+        AlreadyMadeEntryDialogue(
+            onDismiss = {showDialog= false},
+            onEdit = {
+                var entry = allEntriesViewModel.history.first() // Store as something random first
+                for (anEntry in allEntriesViewModel.history) {
+                    if (anEntry.date == LocalDate.now()) {
+                        val entry = anEntry
+                        break
+                    }
+                }
+                // Originally the symptoms are already togg [led for this entry so we needed to reset it
+                // Otherwise old selections still apply when editing
+                symptomsViewModel.resetSelections()
+                symptomsViewModel.loadValuesForEditing(entry) // loads mood, text and date
+                // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
+
+                // Users mentioned it was better to save previous selections instead of completely starting over
+                entry.physical_symptoms_entry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physical_symptoms)
+                }
+                entry.mental_symptoms_entry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mental_symptoms)
+                }
+                entry.activities_entry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
+                }
+
+                navController.navigate(AppPages.NewEntry.title)
+
+                showDialog = false // close dialogue
+            }
+        )
     }
     Column(
         modifier=modifier
