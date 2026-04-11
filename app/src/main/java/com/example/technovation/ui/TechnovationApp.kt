@@ -1,6 +1,5 @@
 package com.example.technovation.ui
 
-import Home
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
@@ -27,6 +26,8 @@ fun TechnovationApp(
     val allAudioResults: AllAudioResults = viewModel()
     val resourcesViewModel: ResourcesViewModel = viewModel()
     val allMedicationsViewModel: MedicationViewModel = viewModel()
+    val symptomsViewModel: SymptomsViewModel = viewModel()
+    val canNavigateBack = navController.previousBackStackEntry != null
 
     Scaffold(
         bottomBar = {
@@ -37,7 +38,15 @@ fun TechnovationApp(
                 },
                 modifier
             )
-        }
+        },
+        topBar = {
+            // Add the Top Bar here!
+            TopNavigationBar(
+                currentDestination = currentDestination,
+                canNavigateBack = canNavigateBack,
+                navigateBack = { navController.popBackStack() }
+            )
+        },
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -47,7 +56,8 @@ fun TechnovationApp(
             composable(route = AppPages.HomePage.title) {
                 Home(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    medicationsViewModel = allMedicationsViewModel)
             }
             composable(route = AppPages.ResourcesPage.title){
                 ResourcesPage(navController = navController,
@@ -67,23 +77,27 @@ fun TechnovationApp(
             composable(route = AppPages.Journal.title) {
                 JournalPage(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel)
             }
             composable(route = AppPages.NewEntry.title) {
                 NewJournalEntry(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel)
             }
             composable(route = AppPages.PastEntries.title) {
                 PastEntries(navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries)
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel)
             }
             composable(route = AppPages.Stats.title) {
                 StatisticsPage(
                     navController = navController,
                     modifier = modifier,
-                    allEntriesViewModel = allJournalEntries
+                    allEntriesViewModel = allJournalEntries,
+                    symptomsViewModel = symptomsViewModel
                 )
             }
             composable(route = AppPages.Medication.title) {

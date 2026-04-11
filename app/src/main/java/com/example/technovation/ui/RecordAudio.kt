@@ -75,10 +75,9 @@ fun AudioPage(
             fontSize = 30.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(55.dp))
 
         Text(
             "Features of your speech such as pitch and frequency can tell you more about how severe your symptoms are.",
@@ -379,10 +378,9 @@ fun AllPastRecordings(
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
         )
 
-        Spacer(modifier=Modifier.height(40.dp))
+        Spacer(modifier=Modifier.height(55.dp))
 
         if (allAudioResults.history.isEmpty()) {
             Text("No recordings yet.")
