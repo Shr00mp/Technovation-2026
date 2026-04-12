@@ -33,6 +33,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -57,6 +58,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
+import java.util.Locale.getDefault
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun AudioPage(
@@ -122,7 +125,12 @@ data class AnalysisResult(
 )
 
 fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
-    val client = OkHttpClient()
+    val client = OkHttpClient.Builder()
+        .connectTimeout(600, TimeUnit.SECONDS)
+        .readTimeout(600, TimeUnit.SECONDS)
+        .writeTimeout(600, TimeUnit.SECONDS)
+        .build()
+
     val file = File(filePath)
 
     // The key "file" must match the parameter name in your FastAPI function: save_audio(file: UploadFile)
@@ -319,11 +327,28 @@ fun ResultView(result: AnalysisResult) {
         Text("Severity: ${(result.severityScore * 100).toInt()}%", fontSize = 20.sp)
         Text("Accuracy: ${(result.accuracy * 100).toInt()}%", fontSize = 20.sp)
 
-        Spacer(modifier = Modifier.height(15.dp))
+        Spacer(modifier = Modifier.height(25.dp))
+        val para = arrayListOf<String>()
 
-        result.topIndicators.forEach { factor ->
-            Text("Your $factor is a primary factor.", fontSize = 20.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+        result.topIndicators.forEachIndexed { index, string ->
+            para.add(string.replaceFirstChar { if (it.isLowerCase()) it.titlecase(getDefault()) else it.toString() })
+        }
+
+        Text("The following were primary factors for this severity level:", fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(10.dp))
+        val bullet = "\u2022"
+        para.forEach { factor ->
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                Text(
+                    text = bullet,
+                    fontSize = 20.sp,
+                    modifier = Modifier.width(24.dp)
+                )
+                Text(
+                    text = factor,
+                    fontSize = 20.sp
+                )
+            }
         }
     }
 }
