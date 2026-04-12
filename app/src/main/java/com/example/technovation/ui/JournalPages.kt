@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -66,6 +67,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -79,6 +81,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import ir.ehsannarmani.compose_charts.LineChart
+import ir.ehsannarmani.compose_charts.models.AnimationMode
+import ir.ehsannarmani.compose_charts.models.DrawStyle
+import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
+import ir.ehsannarmani.compose_charts.models.LabelProperties
+import ir.ehsannarmani.compose_charts.models.Line
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -1035,83 +1043,55 @@ fun AlreadyMadeEntryDialogue(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
-    val maxMood = 5f
-    val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
     val sortedEntries = entries.sortedBy { it.date }
-    // Note that the coordinate system has (0, 0) as the top left corner
+    val moodValues = sortedEntries.map { it.mood.toDouble() }
 
-    Canvas(modifier = modifier) {
-        val leftPadding = 60.dp.toPx() // Creates space for emojis
-        val bottomPadding = 50.dp.toPx() // Creates a lane for the dates
-        val topPadding = 30.dp.toPx()
-        val rightPadding = 20.dp.toPx()
-
-        // Get the actual width and height of the chart
-        val chartWidth = size.width - leftPadding - rightPadding
-        val chartHeight = size.height - bottomPadding - topPadding
-
-        // Gets the number of pixels between each day
-        val xStep = if (sortedEntries.size > 1) chartWidth / (sortedEntries.size - 1) else 0f
-
-        // Gets the x and y coordinate of each of the points
-        val points = sortedEntries.mapIndexed { index, entry ->
-            val x = leftPadding + (index * xStep)
-            val y = topPadding + (chartHeight - ((entry.mood - 1) / (maxMood - 1)) * chartHeight)
-            Offset(x, y)
-        }
-
-        // For drawing the emojis
-        val paint = Paint().apply {
-            textSize = 24.sp.toPx()
-            textAlign = Paint.Align.CENTER
-        }
-
-        // Draws the 5 horizontal grid lines
-        for (i in 0 until 5) {
-            val y = topPadding + (chartHeight - (i / 4f) * chartHeight)
-            drawLine(
-                color = Color.DarkGray.copy(alpha = 0.2f),
-                start = Offset(leftPadding, y),
-                end = Offset(size.width, y),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawIntoCanvas { canvas ->
-                canvas.nativeCanvas.drawText(moodEmojis[i], leftPadding / 2, y + (paint.textSize / 3), paint)
+    // Labelling the x-axis with only the start of every week
+    // Tried labelling every day before but that got way too crowded
+    val dateLabels = remember(sortedEntries) {
+        sortedEntries.mapIndexed { index, entry ->
+            if (entry.date.dayOfWeek == DayOfWeek.MONDAY) {
+                "${entry.date.dayOfMonth} ${entry.date.month}"
+            } else {
+                ""
             }
-        }
-
-        // For drawing the dates
-        val datePaint = Paint().apply {
-            textSize = 18.sp.toPx() // Shrunk from 24sp
-            color = android.graphics.Color.GRAY
-            textAlign = Paint.Align.CENTER
-        }
-
-        // Plots the dates for each entry
-        sortedEntries.forEachIndexed { index, entry ->
-            val x = leftPadding + (index * xStep)
-            val dateLabel = "${entry.date.monthValue}/${entry.date.dayOfMonth}"
-            drawIntoCanvas { canvas ->
-                canvas.nativeCanvas.drawText(dateLabel, x, size.height - 10.dp.toPx(), datePaint)
-            }
-        }
-
-        // Draw the line between each point
-        for (i in 0 until points.size - 1) {
-            drawLine(
-                color = Color(0xFF6200EE),
-                start = points[i],
-                end = points[i + 1],
-                strokeWidth = 2.dp.toPx(),
-                cap = StrokeCap.Round
-            )
-        }
-
-        // Draw the circle for each point
-        points.forEach { point ->
-            drawCircle(color = Color(0xFF3700B3), radius = 4.dp.toPx(), center = point)
         }
     }
+    val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
+    LineChart(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp),
+        data = remember(entries) {
+            listOf(
+                Line(
+                    label = "Mood",
+                    values = moodValues,
+                    color = SolidColor(Color(0xFF23af92)),
+                    firstGradientFillColor = Color(0xFF2BC0A1).copy(alpha = .5f),
+                    secondGradientFillColor = Color.Transparent,
+                    strokeAnimationSpec = tween(2000),
+                    gradientAnimationDelay = 1000,
+                    drawStyle = DrawStyle.Stroke(width = 2.dp),
+                )
+            )
+        },
+        labelProperties = LabelProperties(
+            enabled = true,
+            labels = dateLabels,
+            textStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 15.sp),
+        ),
+        indicatorProperties = HorizontalIndicatorProperties(
+            enabled = true,
+            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 20.sp),
+            contentBuilder = { value ->
+                val index = value.toInt() - 1
+                moodEmojis.getOrElse(index) { "" }
+            }
+        ),
+
+        minValue = 1.0,
+        maxValue = 5.0,
+        animationMode = AnimationMode.Together(delayBuilder = { it * 500L }),
+    )
 }
 
 // Template from the Android Developer components list

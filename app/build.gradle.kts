@@ -70,4 +70,5 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     ksp("androidx.room3:room3-compiler:3.0.0-alpha02")
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation ("io.github.ehsannarmani:compose-charts:0.0.17")
 }
