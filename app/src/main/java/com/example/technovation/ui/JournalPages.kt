@@ -2,15 +2,15 @@ package com.example.technovation.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Paint
 import android.os.Build
 import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,14 +25,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
@@ -41,14 +38,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -57,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -65,28 +58,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.LineChart
 import ir.ehsannarmani.compose_charts.models.AnimationMode
+import ir.ehsannarmani.compose_charts.models.BarProperties
+import ir.ehsannarmani.compose_charts.models.Bars
 import ir.ehsannarmani.compose_charts.models.DrawStyle
+import ir.ehsannarmani.compose_charts.models.GridProperties
 import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
+import ir.ehsannarmani.compose_charts.models.IndicatorCount
 import ir.ehsannarmani.compose_charts.models.LabelProperties
 import ir.ehsannarmani.compose_charts.models.Line
+import ir.ehsannarmani.compose_charts.models.VerticalIndicatorProperties
+import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -223,6 +219,7 @@ class SymptomsViewModel: ViewModel() {
     )
 
     val allSymptomsNames = (physical_symptoms + mental_symptoms).map { it.name }
+    val symptomsAndActivityNames = (physical_symptoms + mental_symptoms + activities_list).map { it.name }
 
     // in order to allow user to edit their past entries, we need to store their mood, text and date in the viewmodel
     // so that it can be filled in correctly
@@ -310,9 +307,16 @@ class SymptomsViewModel: ViewModel() {
         // Improvement is calculated by comparing the number of times a symptom appears before and after starting an activity
         // If the percentage change is significant enough, this represents there being an improvement
         // This "percentage" is in terms of how often the symptom appears in the total number of days
+        var thresholdDate = LocalDate.now()
+        history.sortedBy { it.date }
+        history.forEach { entry ->
+            if (entry.activities_entry.contains(activity)) {
+                thresholdDate = entry.date
+            }
+        }
 
-        val beforeEntries = history.filter { it.date.isBefore(activity.dateAdded) }
-        val afterEntries = history.filter { it.date.isAfter(activity.dateAdded) || it.date.isEqual(activity.dateAdded) }
+        val beforeEntries = history.filter { it.date.isBefore(thresholdDate) }
+        val afterEntries = history.filter { it.date.isAfter(thresholdDate) || it.date.isEqual(thresholdDate) }
 
         // Should have at least some entries before and after the activity started to make a comparison
         if (beforeEntries.isEmpty() || afterEntries.isEmpty()) return null
@@ -335,16 +339,15 @@ class SymptomsViewModel: ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getWeeklySymptomCounts(history: List<Entry>, symptomName: String): Map<LocalDate, Int> {
-        if (history.isEmpty() || symptomName.isBlank()) return emptyMap()
-
-        val target = symptomName.trim()
+        if (history.isEmpty()) return emptyMap()
 
         return history.groupBy { entry ->
             entry.date.with(DayOfWeek.MONDAY)
         }.mapValues { (_, entriesInWeek) ->
             entriesInWeek.count { entry ->
-                entry.physical_symptoms_entry.any { it.name.equals(target, ignoreCase = true) } ||
-                        entry.mental_symptoms_entry.any { it.name.equals(target, ignoreCase = true) }
+                entry.physical_symptoms_entry.any { it.name.equals(symptomName, ignoreCase = true) } ||
+                        entry.mental_symptoms_entry.any { it.name.equals(symptomName, ignoreCase = true) } ||
+                        entry.activities_entry.any {it.name.equals(symptomName, ignoreCase = true)}
             }
         }.toSortedMap()
     }
@@ -800,7 +803,6 @@ class AllJournalEntries(): ViewModel() {
     val history = mutableStateListOf<Entry>()
 
     var initialised = false
-
     fun initialize(symptomsViewModel: SymptomsViewModel) {
         if (!initialised) {
             history.addAll(addExampleData(
@@ -1094,89 +1096,13 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
     )
 }
 
-// Template from the Android Developer components list
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CustomizableSearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onSearch: (String) -> Unit,
-    searchResults: List<String>,
-    onResultClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    placeholder: @Composable () -> Unit = { Text("Search for a symptom") },
-    leadingIcon: @Composable (() -> Unit)? = { Icon(Icons.Default.Search, contentDescription = "Search") },
-    supportingContent: (@Composable (String) -> Unit)? = null,
-    leadingContent: (@Composable () -> Unit)? = null,
-) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-
-    Box(
-        modifier
-            .semantics { isTraversalGroup = true }
-    ) {
-        SearchBar(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .semantics { traversalIndex = 0f },
-            inputField = {
-                SearchBarDefaults.InputField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    onSearch = {
-                        onSearch(query)
-                        expanded = false
-                    },
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it },
-                    placeholder = placeholder,
-                    leadingIcon = leadingIcon,
-                    // ADDED LOGIC HERE:
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = {
-                                onQueryChange("") // Clears the text
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear search"
-                                )
-                            }
-                        }
-                    }
-                )
-            },
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-        ) {
-            LazyColumn {
-                items(count = searchResults.size) { index ->
-                    val resultText = searchResults[index]
-                    ListItem(
-                        headlineContent = { Text(resultText) },
-                        supportingContent = supportingContent?.let { { it(resultText) } },
-                        leadingContent = leadingContent,
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier
-                            .clickable {
-                                onResultClick(resultText)
-                                expanded = false
-                            }
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-
-    val allNames = viewModel.allSymptomsNames
+    var showResults by remember { mutableStateOf(false)}
+    // Was originally just symptomsNames, but it is better for user to be able to view activity progress too
+    val allNames = viewModel.symptomsAndActivityNames
     val filteredResults = allNames.filter { it.contains(searchQuery, ignoreCase = true) }
     val weeklyData = viewModel.getWeeklySymptomCounts(history, searchQuery)
 
@@ -1194,40 +1120,85 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
                 modifier=Modifier
                     .align(Alignment.CenterHorizontally)
             )
+            Spacer(modifier=Modifier.height(15.dp))
 
-            // Container for search bar
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()) {
-                CustomizableSearchBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    onSearch = {
+            // Search bar
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = {
                         searchQuery = it
+                        showResults = it.isNotEmpty() // Changed this so that results show as user types
                     },
-                    searchResults = filteredResults,
-                    onResultClick = { selectedName ->
-                        searchQuery = selectedName
-                    }
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Search for a symptom / activity") },
+                    placeholder = { Text("Enter symptom / activity name") },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "search") }
                 )
+
+                // Search bar results
+                if (showResults && filteredResults.isNotEmpty() && !allNames.contains(searchQuery)) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column {
+                            filteredResults.forEach { result ->
+                                Text(
+                                    text = result,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            searchQuery = result
+                                            showResults = false
+                                        }
+                                        .padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
-            // Note that graph only shown if search bar not expanded
+            // We changed graph to only show if search bar not expanded
             // This prevents the graph from being pushed off the screen
             if (searchQuery.isNotBlank() && allNames.contains(searchQuery)) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 if (weeklyData.isNotEmpty()) {
-                    Text("Days per week with $searchQuery", fontSize = 20.sp)
-
+                    Text("Days per week with $searchQuery", fontSize = 20.sp,
+                        modifier=Modifier
+                            .align(Alignment.CenterHorizontally))
+                    Spacer(modifier = Modifier.height(20.dp))
                     // Changed the height of line graph to be fixed so it doesn't get pushed off the screen by search bar
-                    SymptomLineGraph(
-                        data = weeklyData,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(250.dp)
-                            .padding(bottom = 20.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            SymptomBarChart(
+                                data = weeklyData,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(250.dp)
+                                    .padding(bottom = 20.dp)
+                            )
+                            Text(
+                                "Week of",
+                                modifier=Modifier
+                                    .align(Alignment.CenterHorizontally),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
                 } else {
                     Text("You have not yet made an entry for \"$searchQuery\"", color = Color.Gray, modifier = Modifier.padding(20.dp))
                 }
@@ -1238,62 +1209,48 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SymptomLineGraph(data: Map<LocalDate, Int>, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.padding(horizontal = 40.dp, vertical = 20.dp)) {
-        val entries = data.toList()
-        val canvasWidth = size.width
-        val canvasHeight = size.height
+fun SymptomBarChart(data: Map<LocalDate, Int>, modifier: Modifier = Modifier) {
+    // The data contains key as start of week date and int as the number occurrences that week
+    val bars = arrayListOf<Bars>()
 
-        val xStep = if (entries.size > 1) canvasWidth / (entries.size - 1) else canvasWidth
-
-        // get coordinates for the points
-        val points = entries.mapIndexed { index, pair ->
-            val x = index * xStep
-            val yRatio = pair.second.toFloat() / 7 // Changed to float to avoid rounding errors
-            val y = canvasHeight - (yRatio * canvasHeight)
-            Offset(x, y)
-        }
-
-        // Draw grid lines
-        for (i in 0..7) {
-            val gridY = canvasHeight - (i.toFloat() / 7f * canvasHeight)
-            drawLine(
-                color = Color.LightGray.copy(alpha = 0.5f),
-                start = Offset(0f, gridY),
-                end = Offset(canvasWidth, gridY),
-                strokeWidth = 1.dp.toPx()
+    data.forEach { (date, i) ->
+        bars.add(
+            Bars(
+                label = "${date.dayOfMonth} ${date.month}",
+                values = listOf(
+                    Bars.Data(
+                        label = "Count",
+                        value = i.toDouble(),
+                        color = SolidColor(Color(0xFF23af92))
+                    )
+                )
             )
-        }
-
-        // Draw line connecting points
-        for (i in 0 until points.size - 1) {
-            drawLine(
-                color = Color(0xFF6200EE),
-                start = points[i],
-                end = points[i + 1],
-                strokeWidth = 3.dp.toPx(),
-                cap = StrokeCap.Round
-            )
-        }
-
-        // Draw points and labels
-        points.forEachIndexed { index, point ->
-            drawCircle(Color(0xFF6200EE), radius = 6.dp.toPx(), center = point)
-
-            drawIntoCanvas { canvas ->
-                val dateStr = "${entries[index].first.monthValue}/${entries[index].first.dayOfMonth}"
-                val textPaint = Paint().apply {
-                    color = android.graphics.Color.GRAY
-                    textSize = 28f
-                    textAlign = Paint.Align.CENTER
-                }
-                canvas.nativeCanvas.drawText(dateStr, point.x, canvasHeight + 40f, textPaint)
-
-                // Show the actual count above the point
-                canvas.nativeCanvas.drawText("${entries[index].second}", point.x, point.y - 20f, textPaint)
-            }
-        }
+        )
     }
+
+    ColumnChart(
+        modifier = modifier,
+        data = bars,
+        minValue = 0.0,
+        maxValue = 7.0,
+        indicatorProperties = HorizontalIndicatorProperties(
+            enabled = true,
+            count = IndicatorCount.CountBased(8),
+            contentBuilder = { value ->
+                value.toInt().toString()
+            }
+        ),
+        barProperties = BarProperties(
+            cornerRadius = Bars.Data.Radius.Rectangle(topRight = 6.dp, topLeft = 6.dp),
+            spacing = 1.dp,
+            thickness = 40.dp
+        ),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -1304,21 +1261,25 @@ fun StatisticsPage(
     allEntriesViewModel: AllJournalEntries = viewModel(),
     symptomsViewModel: SymptomsViewModel = viewModel()
 ) {
-    val history = allEntriesViewModel.history.sortedBy { it.date }
-    val improvements = mutableListOf<String>()
+    val history = allEntriesViewModel.history
+    val improvementsMap = remember { mutableStateMapOf<Double, String>() }
 
-    symptomsViewModel.activities_list.forEach { activity ->
+    LaunchedEffect(Unit) {
+        improvementsMap.clear()
+        symptomsViewModel.activities_list.forEach { activity ->
 
-        symptomsViewModel.allSymptomsNames.forEach { sName ->
-            // Change is a percentage. It is higher if there is a more significant difference in symptom before and after activity
-            val change = symptomsViewModel.calculateImprovement(history, activity, sName)
+            symptomsViewModel.allSymptomsNames.forEach { sName ->
+                // Change is a percentage. It is higher if there is a more significant difference in symptom before and after activity
+                val change = symptomsViewModel.calculateImprovement(history, activity, sName)
 
-            // Only report improvement if the reduction is large enough. Boundary in this case is 25%
-            if (change != null && change >= 25.0) {
-                improvements.add("Your $sName has decreased by ${change.toInt()}% since you started ${activity.name}.")
+                // Only report improvement if the reduction is large enough. Boundary in this case is 25%
+                if (change != null && change >= 25.0) {
+                    improvementsMap[change] = "Your $sName symptom has decreased by ${change.toInt()}% since you started ${activity.name}."
+                }
             }
         }
     }
+
 
     Column(
         modifier=modifier
@@ -1368,12 +1329,18 @@ fun StatisticsPage(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        SymptomGraphCard(history, symptomsViewModel)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+
         // Card for showing which activities correlate to improvements in which symptoms
-        if (improvements.isNotEmpty()) {
+        if (improvementsMap.isNotEmpty()) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1381,26 +1348,28 @@ fun StatisticsPage(
                 elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
+                Spacer(modifier = Modifier.height(15.dp))
                 Text(
                     "Activity Insights",
                     fontSize = 20.sp,
                     modifier=Modifier
                         .align(Alignment.CenterHorizontally)
                 )
-                improvements.forEach { text ->
+                Spacer(modifier=Modifier.height(20.dp))
+                improvementsMap.toSortedMap(compareByDescending { it }).values.take(5).forEach { text ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 4.dp, horizontal = 10.dp),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
                     ) {
                         Text(text, modifier = Modifier.padding(16.dp))
                     }
+                    Spacer(modifier=Modifier.height(5.dp))
                 }
             }
         }
-
-        SymptomGraphCard(history, symptomsViewModel)
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
