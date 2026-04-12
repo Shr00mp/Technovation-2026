@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -54,6 +53,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,8 +73,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -92,6 +90,9 @@ fun JournalPage(
     allEntriesViewModel: AllJournalEntries = viewModel(),
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
+    LaunchedEffect(Unit) {
+        allEntriesViewModel.initialize(symptomsViewModel)
+    }
 
     if (showDialog) {
         AlreadyMadeEntryDialogue(
@@ -194,7 +195,7 @@ data class Symptom(
 class SymptomsViewModel: ViewModel() {
     var physical_symptoms = mutableStateListOf<Symptom>(
         Symptom(1, "Dizziness"),
-        Symptom(2, "Loss of smell"),
+        Symptom(2, "Tremors"),
         Symptom(3, "Headaches"),
         Symptom(4, "Insomnia")
     )
@@ -695,6 +696,87 @@ fun NewJournalEntry(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
+fun addExampleData(
+    physicalOptions: List<Symptom>,
+    mentalOptions: List<Symptom>,
+    activityOptions: List<Symptom>
+): List<Entry> {
+    val returnList = arrayListOf<Entry>()
+    var currDate = LocalDate.now()
+    var mood = 1
+    for (i in 1..14) {
+        currDate = currDate.minusDays(1)
+        // For this example, we want the general trend for mood to be increasing over time
+        if (i in 1..5) {mood =(3..5).random()}
+        if (i in 6..9) {mood =(2..4).random()}
+        if (i in 10..14) {mood =(1..3).random()}
+
+        // We want the general trend for the first 2 physical symptoms and first 2 mental symptoms to be decreasing
+        val currPhysical = mutableListOf<Symptom>()
+        physicalOptions.forEachIndexed { index, symptom ->
+            val randomChanceP = (1..100).random()
+            if (index == 0 || index== 1) {
+                val thresholdForChoosingSymptomP = i*5 // For i=1, would be 5% and goes up to 70% for i=14
+                if (randomChanceP <= thresholdForChoosingSymptomP) {
+                    currPhysical.add(symptom)
+                }
+            } else {
+                if (randomChanceP <=20) {currPhysical.add(symptom)}
+            }
+        }
+
+        val currMental = mutableListOf<Symptom>()
+        mentalOptions.forEachIndexed { index, symptom ->
+            val randomChangeM = (1..100).random()
+            if (index == 0 || index== 1) {
+                val thresholdForChoosingSymptomM = i*5
+                if (randomChangeM <= thresholdForChoosingSymptomM){
+                    currMental.add(symptom)
+                }
+            } else {
+                if (randomChangeM <= 20) {currMental.add(symptom)}
+            }
+        }
+
+        // User starts doing yoga and medication 11 and 8 days from now respectively
+        val currActivities = mutableListOf<Symptom>()
+        activityOptions.forEachIndexed { index, symptom ->
+            val randomChanceA = (1..100).random()
+            if (index == 0) {
+                if (i <= 11) {
+                    if (randomChanceA <= 80) {currActivities.add(symptom)}
+                }
+            } else if (index == 1) {
+                if (i <= 8) {
+                    if (randomChanceA <= 80) {
+                        currActivities.add(symptom)
+                    }
+                }
+            } else {
+                if (randomChanceA < 10) {
+                    currActivities.add(symptom)
+                }
+            }
+        }
+
+        returnList.add(
+            Entry(
+                date = currDate,
+                mood = mood,
+                physical_symptoms_entry = currPhysical,
+                mental_symptoms_entry = currMental,
+                activities_entry = currActivities,
+                text_in_journal = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer " +
+                        "sagittis tortor non massa varius, sit amet interdum nibh interdum. Duis " +
+                        "hendrerit auctor sem, vel gravida dolor congue nec."
+            )
+        )
+    }
+
+    return returnList
+}
+
 
 data class Entry(
     val date: LocalDate,
@@ -706,67 +788,20 @@ data class Entry(
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
-class AllJournalEntries: ViewModel() {
+class AllJournalEntries(): ViewModel() {
     val history = mutableStateListOf<Entry>()
 
-    init {
-        // This data is just for testing
-        history.add(
-            Entry(
-                date = LocalDate.of(2026, 2, 3), // 03/02/2026
-                mood = 2,
-                physical_symptoms_entry = listOf(
-                    Symptom(1, "Dizziness", true),
-                    Symptom(1, "Headaches", true)
-                ),
-                mental_symptoms_entry = listOf(
-                    Symptom(1, "Anxious", true)
-                ),
-                activities_entry = listOf(
-                    Symptom(1, "Meditation", true)
-                ),
-                text_in_journal = "Today I felt a bit lightheaded in the morning, but meditation helped."
-            )
-        )
-        history.add(
-            Entry(
-                date = LocalDate.of(2026, 1, 10), // 03/02/2026
-                mood = 1,
-                physical_symptoms_entry = listOf(
-                    Symptom(1, "Loss of smell", true),
-                    Symptom(1, "Insomnia", true),
-                ),
-                mental_symptoms_entry = listOf(
-                    Symptom(1, "Depressed", true),
-                    Symptom(1, "Tired", true)
-                ),
-                activities_entry = listOf(
-                ),
-                text_in_journal = "Was too tired today to do any exercise."
-            )
-        )
-        history.add(
-            Entry(
-                date = LocalDate.of(2026, 1, 4), // 03/02/2026
-                mood = 4,
-                physical_symptoms_entry = listOf(
-                    Symptom(1, "Insomnia", true),
-                    Symptom(3, "Headaches", true),
-                ),
-                mental_symptoms_entry = listOf(
-                    Symptom(1, "Depressed", true),
-                    Symptom(2, "Groggy", true),
-                    Symptom(3, "Anxious", true)
-                ),
-                activities_entry = listOf(
-                    Symptom(1, "Yoga", true),
-                    Symptom(1, "Walk", true),
-                ),
-                text_in_journal = "Today I didn't sleep very well and felt quite groggy. I've been " +
-                        "anxious about my sleep but going on a walk and doing some yoga made me feel" +
-                        " a bit less depressed."
-            )
-        )
+    var initialised = false
+
+    fun initialize(symptomsViewModel: SymptomsViewModel) {
+        if (!initialised) {
+            history.addAll(addExampleData(
+                physicalOptions = symptomsViewModel.physical_symptoms,
+                mentalOptions = symptomsViewModel.mental_symptoms,
+                activityOptions = symptomsViewModel.activities_list
+            ))
+            initialised = true
+        }
     }
 
     fun addEntry(entry: Entry) {
