@@ -30,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -499,7 +500,8 @@ fun ManageMedicationPage(
             label = { Text("Search your medication reminders") },
             placeholder = { Text("Type medication name...") },
             shape = RoundedCornerShape(12.dp),
-            singleLine = true
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "search") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
