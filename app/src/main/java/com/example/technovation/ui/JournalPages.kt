@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Phone
@@ -38,6 +39,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -60,10 +62,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -76,13 +77,10 @@ import ir.ehsannarmani.compose_charts.models.AnimationMode
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.Bars
 import ir.ehsannarmani.compose_charts.models.DrawStyle
-import ir.ehsannarmani.compose_charts.models.GridProperties
 import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
 import ir.ehsannarmani.compose_charts.models.IndicatorCount
 import ir.ehsannarmani.compose_charts.models.LabelProperties
 import ir.ehsannarmani.compose_charts.models.Line
-import ir.ehsannarmani.compose_charts.models.VerticalIndicatorProperties
-import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -95,7 +93,7 @@ fun JournalPage(
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
     LaunchedEffect(Unit) {
-        allEntriesViewModel.initialize(symptomsViewModel)
+        allEntriesViewModel.initialise(symptomsViewModel)
     }
 
     if (showDialog) {
@@ -109,20 +107,20 @@ fun JournalPage(
                         break
                     }
                 }
-                // Originally the symptoms are already togg [led for this entry so we needed to reset it
+                // Originally the symptoms are already toggled for this entry so we needed to reset it
                 // Otherwise old selections still apply when editing
                 symptomsViewModel.resetSelections()
                 symptomsViewModel.loadValuesForEditing(entry) // loads mood, text and date
                 // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
 
                 // Users mentioned it was better to save previous selections instead of completely starting over
-                entry.physical_symptoms_entry.forEach { pastSymptom ->
-                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physical_symptoms)
+                entry.physicalSymptomsEntry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physicalSymptoms)
                 }
-                entry.mental_symptoms_entry.forEach { pastSymptom ->
-                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mental_symptoms)
+                entry.mentalSymptomsEntry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mentalSymptoms)
                 }
-                entry.activities_entry.forEach { pastSymptom ->
+                entry.activitiesEntry.forEach { pastSymptom ->
                     symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
                 }
 
@@ -148,7 +146,7 @@ fun JournalPage(
 
         Spacer(modifier=Modifier.height(55.dp))
 
-        Button(
+        Card(
             onClick = {
                 if (allEntriesViewModel.hasEntryForDay(LocalDate.now())) {
                     showDialog = true
@@ -158,32 +156,79 @@ fun JournalPage(
                 }
             },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 10.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
         ) {
-            Text("Make a new entry", fontSize=20.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(25.dp)
+            ) {
+                Text("Make a new journal entry", fontSize = 25.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f))
+                Spacer(modifier=Modifier.width(35.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Arrow",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
 
         Spacer(modifier=Modifier.height(20.dp))
 
-        Button(
-            onClick = {navController.navigate(route = AppPages.PastEntries.title)},
+        Card(
+            onClick = {
+                navController.navigate(route = AppPages.PastEntries.title)
+            },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 10.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary),
         ) {
-            Text("See past entries", fontSize=20.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(25.dp)
+            ) {
+                Text("See your past entries", fontSize = 25.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f))
+                Spacer(modifier=Modifier.width(35.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Arrow",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+
         }
 
         Spacer(modifier=Modifier.height(20.dp))
 
-        Button(
-            onClick = {navController.navigate(route = AppPages.Stats.title)},
+        Card(
+            onClick = {
+                navController.navigate(route = AppPages.Stats.title)
+            },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 10.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
         ) {
-            Text("See your statistics", fontSize=20.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(25.dp)
+            ) {
+                Text("See your statistics", fontSize = 25.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f))
+                Spacer(modifier=Modifier.width(35.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Arrow",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }
@@ -191,24 +236,23 @@ fun JournalPage(
 data class Symptom(
     val id: Int,
     val name: String,
-    var selected: Boolean = false,
-    val dateAdded: LocalDate = LocalDate.now()
+    var selected: Boolean = false
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
 class SymptomsViewModel: ViewModel() {
-    var physical_symptoms = mutableStateListOf<Symptom>(
+    var physicalSymptoms = mutableStateListOf<Symptom>(
         Symptom(1, "Dizziness"),
         Symptom(2, "Tremors"),
         Symptom(3, "Headaches"),
         Symptom(4, "Insomnia")
     )
 
-    var mental_symptoms = mutableStateListOf<Symptom>(
-        Symptom(1, "Anxious"),
-        Symptom(2, "Depressed"),
+    var mentalSymptoms = mutableStateListOf<Symptom>(
+        Symptom(1, "Anxiety"),
+        Symptom(2, "Depression"),
         Symptom(3, "Tired"),
-        Symptom(4, "Irritated")
+        Symptom(4, "Irritation")
     )
 
     var activities_list = mutableStateListOf<Symptom>(
@@ -218,8 +262,8 @@ class SymptomsViewModel: ViewModel() {
         Symptom(4, "Dancing")
     )
 
-    val allSymptomsNames = (physical_symptoms + mental_symptoms).map { it.name }
-    val symptomsAndActivityNames = (physical_symptoms + mental_symptoms + activities_list).map { it.name }
+    val allSymptomsNames = (physicalSymptoms + mentalSymptoms).map { it.name }
+    val symptomsAndActivityNames = (physicalSymptoms + mentalSymptoms + activities_list).map { it.name }
 
     // in order to allow user to edit their past entries, we need to store their mood, text and date in the viewmodel
     // so that it can be filled in correctly
@@ -228,16 +272,16 @@ class SymptomsViewModel: ViewModel() {
     var pastEntryDate by mutableStateOf(LocalDate.now())
 
     // Is for selecting the Symptom with provided id and in one of the three lists
-    fun toggleSymptom(id: Int, curr_list: MutableList<Symptom>) {
-        val index = curr_list.indexOfFirst { it.id == id }
-        var temp = curr_list[index]
+    fun toggleSymptom(id: Int, currLIst: MutableList<Symptom>) {
+        val index = currLIst.indexOfFirst { it.id == id }
+        var temp = currLIst[index]
         // need to replace the object with an entirely new copy
-        curr_list[index] = temp.copy(selected = !temp.selected)
+        currLIst[index] = temp.copy(selected = !temp.selected)
     }
 
     fun getSelectedPhysicalSymptoms(): List<Symptom> {
         var return_list = mutableListOf<Symptom>()
-        for (symptom in physical_symptoms) {
+        for (symptom in physicalSymptoms) {
             if (symptom.selected) {
                 return_list.add(symptom)
             }
@@ -247,7 +291,7 @@ class SymptomsViewModel: ViewModel() {
 
     fun getSelectedMentalSymptoms(): List<Symptom> {
         var return_list = mutableListOf<Symptom>()
-        for (symptom in mental_symptoms) {
+        for (symptom in mentalSymptoms) {
             if (symptom.selected) {
                 return_list.add(symptom)
             }
@@ -267,11 +311,11 @@ class SymptomsViewModel: ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun resetSelections() {
-        for (i in physical_symptoms.indices) {
-            physical_symptoms[i] = physical_symptoms[i].copy(selected = false)
+        for (i in physicalSymptoms.indices) {
+            physicalSymptoms[i] = physicalSymptoms[i].copy(selected = false)
         }
-        for (i in mental_symptoms.indices) {
-            mental_symptoms[i] = mental_symptoms[i].copy(selected = false)
+        for (i in mentalSymptoms.indices) {
+            mentalSymptoms[i] = mentalSymptoms[i].copy(selected = false)
         }
         for (i in activities_list.indices) {
             activities_list[i] = activities_list[i].copy(selected = false)
@@ -288,12 +332,12 @@ class SymptomsViewModel: ViewModel() {
         // 3 = an activity
         when (type) {
             1 -> {
-                val newSymptom = Symptom(id = physical_symptoms.size, name = symptomName, selected = false)
-                physical_symptoms.add(newSymptom)
+                val newSymptom = Symptom(id = physicalSymptoms.size, name = symptomName, selected = false)
+                physicalSymptoms.add(newSymptom)
             }
             2 -> {
-                val newSymptom = Symptom(id = mental_symptoms.size, name = symptomName, selected = false)
-                mental_symptoms.add(newSymptom)
+                val newSymptom = Symptom(id = mentalSymptoms.size, name = symptomName, selected = false)
+                mentalSymptoms.add(newSymptom)
             }
             else -> {
                 val newSymptom = Symptom(id = activities_list.size, name = symptomName, selected = false)
@@ -310,7 +354,7 @@ class SymptomsViewModel: ViewModel() {
         var thresholdDate = LocalDate.now()
         history.sortedBy { it.date }
         history.forEach { entry ->
-            if (entry.activities_entry.contains(activity)) {
+            if (entry.activitiesEntry.contains(activity)) {
                 thresholdDate = entry.date
             }
         }
@@ -323,14 +367,14 @@ class SymptomsViewModel: ViewModel() {
 
        // Get the regularity of symptom before activity using (total days with symptom) / (total days without symptom)
         val frequencyBefore = beforeEntries.count { entry ->
-            entry.mental_symptoms_entry.any { it.name == symptomName } ||
-                    entry.physical_symptoms_entry.any { it.name == symptomName }
+            entry.mentalSymptomsEntry.any { it.name == symptomName } ||
+                    entry.physicalSymptomsEntry.any { it.name == symptomName }
         }.toDouble() / beforeEntries.size
 
         // Get the regularity of the symptom after activity
         val frequencyAfter = afterEntries.count { entry ->
-            entry.mental_symptoms_entry.any { it.name == symptomName } ||
-                    entry.physical_symptoms_entry.any { it.name == symptomName }
+            entry.mentalSymptomsEntry.any { it.name == symptomName } ||
+                    entry.physicalSymptomsEntry.any { it.name == symptomName }
         }.toDouble() / afterEntries.size
 
         // Return the difference
@@ -345,9 +389,9 @@ class SymptomsViewModel: ViewModel() {
             entry.date.with(DayOfWeek.MONDAY)
         }.mapValues { (_, entriesInWeek) ->
             entriesInWeek.count { entry ->
-                entry.physical_symptoms_entry.any { it.name.equals(symptomName, ignoreCase = true) } ||
-                        entry.mental_symptoms_entry.any { it.name.equals(symptomName, ignoreCase = true) } ||
-                        entry.activities_entry.any {it.name.equals(symptomName, ignoreCase = true)}
+                entry.physicalSymptomsEntry.any { it.name.equals(symptomName, ignoreCase = true) } ||
+                        entry.mentalSymptomsEntry.any { it.name.equals(symptomName, ignoreCase = true) } ||
+                        entry.activitiesEntry.any {it.name.equals(symptomName, ignoreCase = true)}
             }
         }.toSortedMap()
     }
@@ -355,7 +399,7 @@ class SymptomsViewModel: ViewModel() {
     fun loadValuesForEditing(entry: Entry) {
         pastEntryDate = entry.date
         tempMood = entry.mood
-        tempText = entry.text_in_journal
+        tempText = entry.textInJournal
     }
 }
 
@@ -367,20 +411,15 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // The Status Circle
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(if (symptom.selected) Color.Gray else Color.Green) // Changes color
-                .clickable(enabled = true, onClick = toggleSymptom)
-        )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Checkbox(
+            checked = symptom.selected,
+            onCheckedChange = { toggleSymptom() }
+        )
 
         Text(
             text = symptom.name,
-            fontSize = 18.sp
+            fontSize = 20.sp
         )
     }
 }
@@ -388,53 +427,60 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 
 @Composable
 fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int, onConfirm: (String) -> Unit) {
+    // Sadly Alerty Dialog dimensions seem to be fixed so I can't actually make things bigger
     var symptomName by remember { mutableStateOf("") }
-    Dialog(onDismissRequest = { onDismissRequest() }) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                when (type) {
-                    1 -> {
-                        Text("Enter a new physical symptom:")
-                    }
-                    2 -> {
-                        Text("Enter a new mental symptom:")
-                    }
-                    3 -> {
-                        Text("Enter an activity:")
-                    }
+    AlertDialog(
+        onDismissRequest = { onDismissRequest() },
+        title = {
+            when (type) {
+                1 -> {
+                    Text(
+                        "Enter a new physical symptom:",
+                        fontSize = 20.sp
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                2 -> {
+                    Text(
+                        "Enter a new mental symptom:",
+                        fontSize = 20.sp,
+                    )
+                }
 
-                TextField(
-                    value = symptomName,
-                    onValueChange = { symptomName = it },
-                    label = { Text("Name") },
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(onClick = {
+                3 -> {
+                    Text(
+                        "Enter an activity:",
+                        fontSize = 20.sp,
+                    )
+                }
+            }
+        },
+        text = {
+            TextField(
+                value = symptomName,
+                onValueChange = { symptomName = it },
+                label = { Text("Name") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
                     if (symptomName.isNotBlank()){
                         onConfirm(symptomName)
                         onDismissRequest()
                     }
-                }) {
-                    Text("Add")
-                }
+                })
+            {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onDismissRequest() }) {
+                Text("Close")
             }
         }
-    }
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -513,30 +559,40 @@ fun NewJournalEntry(
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                "How are you feeling on a scale from 1 to 5? (1 being the worst and 5 being the best)",
-                modifier = Modifier.padding(16.dp)
-            )
-            val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 30.dp)
             ) {
-                moodEmojis.forEachIndexed { index, emoji ->
-                    val level = index + 1
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = emoji,
-                            fontSize = 30.sp,
-                            modifier = Modifier
-                                .clickable { symptomsViewModel.tempMood = level }
-                                .alpha(if (symptomsViewModel.tempMood == level) 1f else 0.3f)
-                        )
+                Text(
+                    "How are you feeling?",
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Select your mood based on the emojis below",
+                    fontSize = 20.sp,
+                )
+                val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    moodEmojis.forEachIndexed { index, emoji ->
+                        val level = index + 1
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = emoji,
+                                fontSize = 30.sp,
+                                modifier = Modifier
+                                    .clickable { symptomsViewModel.tempMood = level }
+                                    .alpha(if (symptomsViewModel.tempMood == level) 1f else 0.3f)
+                            )
+                        }
                     }
                 }
             }
+
         }
 
         Spacer(modifier=Modifier.height(40.dp))
@@ -549,29 +605,40 @@ fun NewJournalEntry(
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                "Add physical symptoms",
-                modifier = Modifier.padding(16.dp)
-            )
-
-            Spacer(modifier=Modifier.height(10.dp))
-
-            symptomsViewModel.physical_symptoms.forEach { symptom ->
-                SymptomItem(
-                    symptom = symptom,
-                    toggleSymptom = { symptomsViewModel.toggleSymptom(
-                        symptom.id,
-                        curr_list = symptomsViewModel.physical_symptoms)}
-                )
-            }
-
-            Button(
-                onClick = { activeDialogType = 1 },
-                modifier = Modifier
-                    .height(50.dp)
-                    .width(350.dp),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 30.dp)
             ) {
-                Text("Add new physical symptom", fontSize=20.sp)
+                Text(
+                    "Physical Symptoms",
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Enter which symptoms you experienced today",
+                    fontSize = 20.sp,
+                )
+
+                Spacer(modifier=Modifier.height(20.dp))
+
+                symptomsViewModel.physicalSymptoms.forEach { symptom ->
+                    SymptomItem(
+                        symptom = symptom,
+                        toggleSymptom = { symptomsViewModel.toggleSymptom(
+                            symptom.id,
+                            currLIst = symptomsViewModel.physicalSymptoms)}
+                    )
+                }
+
+                Spacer(modifier=Modifier.height(15.dp))
+
+                Button(
+                    onClick = { activeDialogType = 1 },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .width(350.dp),
+                ) {
+                    Text("Add new physical symptom", fontSize=20.sp)
+                }
             }
         }
 
@@ -585,31 +652,39 @@ fun NewJournalEntry(
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                "Add mental symptoms",
-                modifier = Modifier.padding(16.dp)
-            )
-
-            Spacer(modifier=Modifier.height(10.dp))
-
-            symptomsViewModel.mental_symptoms.forEach { symptom ->
-                SymptomItem(
-                    symptom = symptom,
-                    toggleSymptom = { symptomsViewModel.toggleSymptom(
-                        symptom.id,
-                        curr_list = symptomsViewModel.mental_symptoms)}
-                )
-            }
-
-            Button(
-                onClick = { activeDialogType = 2 },
-                modifier = Modifier
-                    .height(50.dp)
-                    .width(350.dp),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 30.dp)
             ) {
-                Text("Add new physical symptom", fontSize=20.sp)
-            }
+                Text(
+                    "Mental Symptoms",
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Enter which symptoms you experienced today",
+                    fontSize = 20.sp,
+                )
 
+                Spacer(modifier=Modifier.height(10.dp))
+
+                symptomsViewModel.mentalSymptoms.forEach { symptom ->
+                    SymptomItem(
+                        symptom = symptom,
+                        toggleSymptom = { symptomsViewModel.toggleSymptom(
+                            symptom.id,
+                            currLIst = symptomsViewModel.mentalSymptoms)}
+                    )
+                }
+
+                Button(
+                    onClick = { activeDialogType = 2 },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .width(350.dp),
+                ) {
+                    Text("Add new mental symptom", fontSize=20.sp)
+                }
+            }
         }
 
         Spacer(modifier=Modifier.height(30.dp))
@@ -622,31 +697,39 @@ fun NewJournalEntry(
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                "Add activities",
-                modifier = Modifier.padding(16.dp)
-            )
-
-            Spacer(modifier=Modifier.height(10.dp))
-
-            symptomsViewModel.activities_list.forEach { symptom ->
-                SymptomItem(
-                    symptom = symptom,
-                    toggleSymptom = { symptomsViewModel.toggleSymptom(
-                        symptom.id,
-                        curr_list = symptomsViewModel.activities_list)}
-                )
-            }
-
-            Button(
-                onClick = { activeDialogType = 3 },
-                modifier = Modifier
-                    .height(50.dp)
-                    .width(350.dp),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 30.dp)
             ) {
-                Text("Add new physical symptom", fontSize=20.sp)
-            }
+                Text(
+                    "Activities",
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Enter which activites you did today",
+                    fontSize = 20.sp,
+                )
 
+                Spacer(modifier=Modifier.height(10.dp))
+
+                symptomsViewModel.activities_list.forEach { symptom ->
+                    SymptomItem(
+                        symptom = symptom,
+                        toggleSymptom = { symptomsViewModel.toggleSymptom(
+                            symptom.id,
+                            currLIst = symptomsViewModel.activities_list)}
+                    )
+                }
+
+                Button(
+                    onClick = { activeDialogType = 3 },
+                    modifier = Modifier
+                        .height(50.dp)
+                        .width(350.dp),
+                ) {
+                    Text("Add new activity", fontSize=20.sp)
+                }
+            }
         }
 
         Spacer(modifier=Modifier.height(30.dp))
@@ -690,10 +773,10 @@ fun NewJournalEntry(
                 val newEntry = Entry(
                     date = symptomsViewModel.pastEntryDate,
                     mood = symptomsViewModel.tempMood,
-                    physical_symptoms_entry = symptomsViewModel.getSelectedPhysicalSymptoms(),
-                    mental_symptoms_entry = symptomsViewModel.getSelectedMentalSymptoms(),
-                    activities_entry = symptomsViewModel.getSelectedActivities(),
-                    text_in_journal = symptomsViewModel.tempText
+                    physicalSymptomsEntry = symptomsViewModel.getSelectedPhysicalSymptoms(),
+                    mentalSymptomsEntry = symptomsViewModel.getSelectedMentalSymptoms(),
+                    activitiesEntry = symptomsViewModel.getSelectedActivities(),
+                    textInJournal = symptomsViewModel.tempText
                 )
                 allEntriesViewModel.addEntry(newEntry)
                 navController.navigate(AppPages.Journal.title)
@@ -775,10 +858,10 @@ fun addExampleData(
             Entry(
                 date = currDate,
                 mood = mood,
-                physical_symptoms_entry = currPhysical,
-                mental_symptoms_entry = currMental,
-                activities_entry = currActivities,
-                text_in_journal = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer " +
+                physicalSymptomsEntry = currPhysical,
+                mentalSymptomsEntry = currMental,
+                activitiesEntry = currActivities,
+                textInJournal = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer " +
                         "sagittis tortor non massa varius, sit amet interdum nibh interdum. Duis " +
                         "hendrerit auctor sem, vel gravida dolor congue nec."
             )
@@ -792,10 +875,10 @@ fun addExampleData(
 data class Entry(
     val date: LocalDate,
     val mood: Int,
-    val physical_symptoms_entry: List<Symptom>,
-    val mental_symptoms_entry: List<Symptom>,
-    val activities_entry: List<Symptom>,
-    val text_in_journal: String,
+    val physicalSymptomsEntry: List<Symptom>,
+    val mentalSymptomsEntry: List<Symptom>,
+    val activitiesEntry: List<Symptom>,
+    val textInJournal: String,
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -803,11 +886,11 @@ class AllJournalEntries(): ViewModel() {
     val history = mutableStateListOf<Entry>()
 
     var initialised = false
-    fun initialize(symptomsViewModel: SymptomsViewModel) {
+    fun initialise(symptomsViewModel: SymptomsViewModel) {
         if (!initialised) {
             history.addAll(addExampleData(
-                physicalOptions = symptomsViewModel.physical_symptoms,
-                mentalOptions = symptomsViewModel.mental_symptoms,
+                physicalOptions = symptomsViewModel.physicalSymptoms,
+                mentalOptions = symptomsViewModel.mentalSymptoms,
                 activityOptions = symptomsViewModel.activities_list
             ))
             initialised = true
@@ -860,9 +943,6 @@ fun PastEntryCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
-    var dayOfWeek = entry.date.dayOfWeek
-    var month = entry.date.month
-    var year = entry.date.year
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -872,12 +952,13 @@ fun PastEntryCard(
     ) {
         Column(
             modifier= Modifier
-                .padding(16.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
             Text(
-                "$dayOfWeek, $month $year"
+                "${entry.date.dayOfWeek} ${entry.date.dayOfMonth} ${entry.date.month} ${entry.date.year}",
+                fontSize = 22.sp,
             )
 
             Row {
@@ -887,9 +968,9 @@ fun PastEntryCard(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(25.dp)
                         )
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontSize = 20.sp)
                     }
                 }
                 TextButton(onClick = onEdit) {
@@ -897,9 +978,9 @@ fun PastEntryCard(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(25.dp)
                         )
-                        Text("Edit", fontSize = 18.sp)
+                        Text("Edit", fontSize = 20.sp)
                     }
                 }
             }
@@ -911,7 +992,8 @@ fun PastEntryCard(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(moodEmojis[entry.mood - 1])
+                Text("Mood:", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(moodEmojis[entry.mood - 1], fontSize = 20.sp)
             }
 
             Spacer(modifier=Modifier.height(5.dp))
@@ -922,8 +1004,40 @@ fun PastEntryCard(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                entry.physical_symptoms_entry.forEach { symptom ->
-                    Text(symptom.name + " ")
+                if (entry.physicalSymptomsEntry.isEmpty()) {
+                    Text("No physical symptoms logged on this day", fontSize = 20.sp)
+                } else {
+                    Text("Physical symptoms: ", fontSize = 20.sp, fontWeight= FontWeight.Bold)
+                    entry.physicalSymptomsEntry.forEach { symptom ->
+                        if (entry.physicalSymptomsEntry.last() == symptom) {
+                            Text(symptom.name, fontSize=20.sp)
+                        } else {
+                            Text(symptom.name + ", ", fontSize=20.sp)
+                        }
+                    }
+                }
+
+            }
+
+            Spacer(modifier=Modifier.height(5.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (entry.mentalSymptomsEntry.isEmpty()) {
+                    Text("No mental symptoms logged on this day", fontSize = 20.sp)
+                } else {
+                    Text("Mental symptoms: ", fontSize = 20.sp, fontWeight= FontWeight.Bold)
+                    entry.mentalSymptomsEntry.forEach { symptom ->
+                        if (entry.mentalSymptomsEntry.last() == symptom) {
+                            Text(symptom.name, fontSize=20.sp)
+                        } else {
+                            Text(symptom.name + ", ", fontSize=20.sp)
+                        }
+                    }
                 }
             }
 
@@ -935,27 +1049,28 @@ fun PastEntryCard(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                entry.mental_symptoms_entry.forEach { symptom ->
-                    Text(symptom.name + " ")
-                }
-            }
-
-            Spacer(modifier=Modifier.height(5.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                entry.activities_entry.forEach { symptom ->
-                    Text(symptom.name + " ")
+                if (entry.activitiesEntry.isEmpty()) {
+                    Text("No activities logged on this day", fontSize = 20.sp)
+                } else {
+                    Text("Activities: ", fontSize = 20.sp, fontWeight= FontWeight.Bold)
+                    entry.activitiesEntry.forEach { symptom ->
+                        if (entry.activitiesEntry.last() == symptom) {
+                            Text(symptom.name, fontSize=20.sp)
+                        } else {
+                            Text(symptom.name + ", ", fontSize=20.sp)
+                        }
+                    }
                 }
             }
 
             Spacer(modifier=Modifier.height(20.dp))
 
-            Text(entry.text_in_journal)
+            if (entry.textInJournal == "") {
+                Text("No written journal entry made on this day", fontSize = 20.sp)
+            } else {
+                Text("Journal text entry: ", fontSize=20.sp, fontWeight = FontWeight.Bold)
+                Text(entry.textInJournal, fontSize=20.sp)
+            }
 
             Spacer(modifier=Modifier.height(20.dp))
         }
@@ -1001,13 +1116,13 @@ fun PastEntries(
                         // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
 
                         // Users mentioned it was better to save previous selections instead of completely starting over
-                        entry.physical_symptoms_entry.forEach { pastSymptom ->
-                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physical_symptoms)
+                        entry.physicalSymptomsEntry.forEach { pastSymptom ->
+                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physicalSymptoms)
                         }
-                        entry.mental_symptoms_entry.forEach { pastSymptom ->
-                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mental_symptoms)
+                        entry.mentalSymptomsEntry.forEach { pastSymptom ->
+                            symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mentalSymptoms)
                         }
-                        entry.activities_entry.forEach { pastSymptom ->
+                        entry.activitiesEntry.forEach { pastSymptom ->
                             symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
                         }
 
@@ -1360,13 +1475,14 @@ fun StatisticsPage(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp, horizontal = 10.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                            .padding(vertical = 4.dp, horizontal = 20.dp),
+                        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseOnSurface)
                     ) {
                         Text(text, modifier = Modifier.padding(16.dp))
                     }
                     Spacer(modifier=Modifier.height(5.dp))
                 }
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
         Spacer(modifier = Modifier.height(20.dp))

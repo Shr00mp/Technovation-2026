@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -234,7 +235,7 @@ fun MedicationTaskCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -320,17 +321,18 @@ fun MedicationPage(
     val remaining = viewModel.remainingTasks
     val completed = viewModel.completedTasks
 
+
     Scaffold(
-        // Bottom bar is anchored using scaffolding
         floatingActionButton = {
             Button(
                 onClick = { navController.navigate(AppPages.ManageMedications.title)},
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 20.dp)
+                    .height(60.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Manage Medications", fontSize = 18.sp)
+                Text("Manage Medications", fontSize = 20.sp)
             }
         },
         floatingActionButtonPosition = FabPosition.Center
@@ -356,10 +358,10 @@ fun MedicationPage(
                 "Tasks left for today",
                 fontSize = 25.sp,
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(0.dp, 15.dp)
+                    .align(Alignment.Start)
+                    .padding(20.dp, top=15.dp)
             )
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             if (remaining.isEmpty()) {
                 Text("You have no more medication tasks for today!", modifier = Modifier.padding(8.dp))
             } else {
