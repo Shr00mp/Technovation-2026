@@ -3,8 +3,10 @@ package com.example.technovation.ui
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -26,10 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,14 +48,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -103,6 +99,7 @@ data class Content(
     val recommended: Boolean = false
 )
 
+//data access object: where I define database interactions and queries
 @Dao
 interface ContentDao {
     @Query("SELECT * FROM Resources_Database")
@@ -128,12 +125,14 @@ interface ContentDao {
 
     @Query("UPDATE Resources_Database SET recommended = 1 WHERE category IN (:categories)")
     suspend fun setRecommendedForCategories(categories: List<String>)
+
+    @Query("UPDATE Resources_Database SET recommended = 1 WHERE contentId IN (:ids)")
+    suspend fun setRecommendedByIds(ids: List<Int>)
 }
 
 class Converters {
     @TypeConverter fun fromType(value: Type): String = value.name
     @TypeConverter fun toType(value: String): Type = Type.valueOf(value)
-    @TypeConverter fun fromCategory(value: Category): String = value.name
     @TypeConverter fun toCategory(value: String): Category = Category.valueOf(value)
 }
 
@@ -152,45 +151,13 @@ abstract class ResourcesDatabase : RoomDatabase() {
                     context.applicationContext,
                     ResourcesDatabase::class.java,
                     "Resources_Database"
+                    //building the database in Room from the predefined database in db browser
                 ).createFromAsset("Resources_Database.db")
                     .build()
                     .also { INSTANCE = it }
             }
         }
     }
-}
-private val keywordMap: Map<Category, List<String>> = mapOf(
-    Category.EXERCISE to listOf(
-        "exercise", "workout", "gym", "run", "running", "walk", "walking",
-        "cycling", "swimming", "dancing", "tired", "fatigue", "stiff",
-        "physio", "stretching", "strength", "yoga"
-    ),
-    Category.MEDITATION to listOf(
-        "meditation", "meditate", "mindful", "stress", "stressed",
-        "overwhelmed", "anxious", "anxiety", "calm", "restless",
-        "insomnia", "can't sleep", "sleep", "racing thoughts", "breathe",
-        "breathing", "relax", "relaxation", "yoga"
-    ),
-    Category.HEALTH to listOf(
-        "dizziness", "dizzy", "headache", "pain", "ache", "symptom",
-        "flare", "medication", "medicine", "doctor", "appointment",
-        "diagnosis", "condition", "treatment", "depressed", "depression",
-        "loss of smell", "groggy", "tired", "fatigue", "irritated"
-    ),
-    Category.RECIPES to listOf(
-        "food", "eat", "eating", "diet", "nutrition", "meal", "hungry",
-        "nausea", "nauseous", "stomach", "bloat", "recipe", "cook",
-        "cooking", "protein", "vegetable", "fruit", "snack",
-        "breakfast", "lunch", "dinner", "smoothie", "hydrat"
-    )
-)
-
-private fun extractCategories(text: String): Set<Category> {
-    val lower = text.lowercase()
-    return keywordMap.entries
-        .filter { (_, keywords) -> keywords.any { lower.contains(it) } }
-        .map { it.key }
-        .toSet()
 }
 
 data class FilterState(
@@ -240,31 +207,33 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun getContentById(id: Int): Flow<Content?> = dao.getById(id)
 
-    /**
-     * Called whenever the resources page loads or a new journal entry is saved.
-     * Reads all journal history, extracts keywords, and updates recommended flags.
-     */
-    fun refreshRecommendations(allEntries: AllJournalEntries) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun refreshRecommendations(allEntriesViewModel: AllJournalEntries) {
         viewModelScope.launch {
-            // Build one big text blob from all journal entries:
-            // symptoms, activities, and free text combined
-            val allText = allEntries.history.joinToString(" ") { entry ->
-                val symptoms = (entry.physical_symptoms_entry + entry.mental_symptoms_entry)
-                    .joinToString(" ") { it.name }
-                val activities = entry.activities_entry.joinToString(" ") { it.name }
-                "$symptoms $activities ${entry.text_in_journal}"
-            }
-
-            val matchedCategories = extractCategories(allText)
+            val symptomAndActivityNames = allEntriesViewModel.history.flatMap { entry ->
+                entry.physical_symptoms_entry.map { it.name } +
+                        entry.mental_symptoms_entry.map { it.name } +
+                        entry.activities_entry.map { it.name } +
+                        entry.text_in_journal.split(" ", ",", ".", "!", "?")
+            }.map { it.trim().lowercase() }.filter { it.length > 3 }.toSet()
 
             dao.clearAllRecommended()
-            if (matchedCategories.isNotEmpty()) {
-                dao.setRecommendedForCategories(matchedCategories.map { it.name })
+
+            if (symptomAndActivityNames.isNotEmpty()) {
+                val allContent = dao.displayAll().map { it }.stateIn(viewModelScope).value
+                val matchingIds = allContent.filter { content ->
+                    val titleWords = content.title.lowercase()
+                    symptomAndActivityNames.any { symptom -> titleWords.contains(symptom) }
+                }.map { it.contentId }
+
+                if (matchingIds.isNotEmpty()) {
+                    dao.setRecommendedByIds(matchingIds)
+                }
             }
         }
     }
 }
-
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResourcesPage(
@@ -274,11 +243,13 @@ fun ResourcesPage(
 ) {
     val articles by viewModel.articles.collectAsStateWithLifecycle()
     val recommended by viewModel.recommended.collectAsStateWithLifecycle()
+    val saved by viewModel.saved.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val filterState by viewModel.filterState.collectAsStateWithLifecycle()
     val filteredContent by viewModel.filteredContent.collectAsStateWithLifecycle()
 
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var showSaved by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.refreshRecommendations(allEntriesViewModel)
@@ -288,7 +259,6 @@ fun ResourcesPage(
             filterState.selectedCategories.isNotEmpty()
 
     Column(modifier = Modifier.fillMaxSize()) {
-
         SearchBar(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             inputField = {
@@ -374,50 +344,60 @@ fun ResourcesPage(
                     )
                 }
             } else {
-                data class CategoryTile(val label: String, val icon: ImageVector, val route: String)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSaved = !showSaved },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = "Saved",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Saved articles",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                        Text(
+                            text = "${saved.size}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
 
-                val tiles = listOf(
-                    CategoryTile("Articles", Icons.Default.Menu, "articles"),
-                    CategoryTile("Healthy Recipes", Icons.Default.ShoppingCart, "recipes"),
-                    CategoryTile("Exercise & Meditation Videos", Icons.Default.Person, "videos"),
-                    CategoryTile("Saved", Icons.Default.Favorite, "saved")
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    tiles.chunked(2).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            row.forEach { tile ->
-                                Card(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(100.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                                    )
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(12.dp),
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = tile.icon,
-                                            contentDescription = tile.label,
-                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = tile.label,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                    }
-                                }
-                            }
-                            if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+                if (showSaved) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (saved.isEmpty()) {
+                        Text(
+                            text = "Nothing saved yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    } else {
+                        saved.forEach { article ->
+                            ArticleCard(
+                                article = article,
+                                onClick = { navController.navigate("detail/${article.contentId}") },
+                                onBookmarkClick = { viewModel.toggleSaved(article) }
+                            )
                         }
                     }
                 }
@@ -457,6 +437,7 @@ fun ResourcesPage(
         }
     }
 }
+
 
 @Composable
 fun ArticleCard(
