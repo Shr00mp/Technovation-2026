@@ -21,7 +21,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -36,15 +35,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.gson.Gson
@@ -87,28 +94,61 @@ fun AudioPage(
             fontSize = 20.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
+                .padding(horizontal = 20.dp)
         )
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        Button(
-            onClick = {navController.navigate(route = AppPages.MakeRecording.title)},
+        Card(
+            onClick = {
+                navController.navigate(route = AppPages.MakeRecording.title)
+            },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 10.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors= CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
         ) {
-            Text("Take a new audio test", fontSize=20.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(25.dp)
+            ) {
+                Text("Take a new audio test", fontSize = 25.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f))
+                Spacer(modifier=Modifier.width(35.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Arrow",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
 
         Spacer(modifier=Modifier.height(20.dp))
 
-        Button(
-            onClick = {navController.navigate(route = AppPages.PastRecordings.title)},
+        Card(
+            onClick = {
+                navController.navigate(route = AppPages.PastRecordings.title)
+            },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 10.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors= CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
         ) {
-            Text("See past test records", fontSize=20.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(25.dp)
+            ) {
+                Text("See past test records", fontSize = 25.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f))
+                Spacer(modifier=Modifier.width(35.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Arrow",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
         }
     }
 }
@@ -204,13 +244,35 @@ fun MakeRecording(
         )
 
         Text(
-            "Take a deep breath." +
-                    "\n When you are ready, click the Start Recording button below." +
-                    "\n Say 'aaaaa' steadily for around 3 seconds." +
-                    "\nClick the Stop Recording button when you are done.",
+            "Take a deep breath.",
             fontSize = 20.sp,
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.Start)
+                .padding(horizontal = 20.dp)
+        )
+        Spacer(modifier=Modifier.height(5.dp))
+        Text(
+            "When you are ready, click the Start Recording button below.",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(horizontal = 20.dp)
+        )
+        Spacer(modifier=Modifier.height(5.dp))
+        Text(
+            "Say 'aaaaa' steadily for around 3 seconds.",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(horizontal = 20.dp)
+        )
+        Spacer(modifier=Modifier.height(5.dp))
+        Text(
+            "Click the Stop Recording button when you are done.",
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(horizontal = 20.dp)
         )
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -267,7 +329,23 @@ fun MakeRecording(
 
         Spacer(modifier = Modifier.height(40.dp))
         if (hasFinishedRecording && !isRecording && !hasGottenResults) {
-            Text("If you are happy with your recording, click Get Results. \nIf not, you can make a new recording by clicking Record Again above.", fontSize=20.sp)
+            Text(
+                "If you are happy with your recording, click Get Results.",
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(horizontal = 20.dp)
+            )
+            Spacer(modifier= Modifier.height(5.dp))
+            Text(
+                "If not, you can make a new recording by clicking Record Again above.",
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(horizontal = 20.dp)
+            )
+
+
             Spacer(modifier = Modifier.height(40.dp))
             Button(
                 onClick = {
@@ -296,7 +374,7 @@ fun MakeRecording(
         if (showDialog && analysisData != null) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text("Analysis Results", fontWeight = FontWeight.Bold) },
+                title = { Text("Analysis Results", fontWeight = FontWeight.Bold, modifier=Modifier.padding(horizontal = 30.dp)) },
                 text = { ResultView(analysisData!!) },
                 confirmButton = {
                     Button(onClick = {
@@ -357,8 +435,7 @@ fun ResultView(result: AnalysisResult) {
 fun ResultsViewCard(result: AnalysisResult) {
     val timestamp = result.date.toLongOrNull() ?: System.currentTimeMillis()
     val dateObject = Date(timestamp)
-    // EEEE = Full day name, MMMM = Full month name, yyyy = Year
-    val formatter = SimpleDateFormat("EEEE, MMMM yyyy", Locale.getDefault())
+    val formatter = SimpleDateFormat("hh:mm a EEEE d MMMM yyyy", Locale.getDefault())
     val formattedDate = formatter.format(dateObject)
 
     Card(
@@ -369,9 +446,11 @@ fun ResultsViewCard(result: AnalysisResult) {
         shape = RoundedCornerShape(16.dp)
     ) {
         Text(
-            text = formattedDate,
+            "$formattedDate",
+            fontSize = 22.sp,
+            modifier=Modifier.align(Alignment.CenterHorizontally).padding(top=20.dp)
         )
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         ResultView(result)
     }
 }

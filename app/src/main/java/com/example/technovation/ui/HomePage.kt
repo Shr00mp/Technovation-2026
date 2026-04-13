@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,13 +62,13 @@ fun Home(
                 // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
 
                 // Users mentioned it was better to save previous selections instead of completely starting over
-                entry.physical_symptoms_entry.forEach { pastSymptom ->
-                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physical_symptoms)
+                entry.physicalSymptomsEntry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physicalSymptoms)
                 }
-                entry.mental_symptoms_entry.forEach { pastSymptom ->
-                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mental_symptoms)
+                entry.mentalSymptomsEntry.forEach { pastSymptom ->
+                    symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.mentalSymptoms)
                 }
-                entry.activities_entry.forEach { pastSymptom ->
+                entry.activitiesEntry.forEach { pastSymptom ->
                     symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
                 }
 
@@ -98,9 +98,8 @@ fun Home(
         Text(
             "How are you feeling today?",
             fontSize = 25.sp,
-            modifier=Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
+            modifier=Modifier.align(Alignment.Start)
+                .padding(20.dp, 15.dp)
         )
 
         Card(
@@ -115,14 +114,14 @@ fun Home(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 10.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().padding(25.dp)
             ) {
                 Text( if (allEntriesViewModel.hasEntryForDay(LocalDate.now())) "Edit your entry for today"
-                     else "Make your daily journal entry", fontSize=25.sp,
+                     else "Make your daily journal entry", fontSize=22.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
                 Spacer(modifier=Modifier.width(35.dp))
@@ -134,14 +133,14 @@ fun Home(
             }
         }
 
-        Spacer(modifier=Modifier.height(20.dp))
+        Spacer(modifier=Modifier.height(35.dp))
 
         Text(
             "Here is your next medication",
             fontSize = 25.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
+                .align(Alignment.Start)
+                .padding(20.dp, 15.dp)
         )
 
         if (medicationsViewModel.remainingTasks.isEmpty()) {
@@ -171,8 +170,8 @@ fun Home(
             "Here is a your daily recommended article",
             fontSize = 25.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(0.dp, 15.dp)
+                .align(Alignment.Start)
+                .padding(20.dp, 15.dp)
         )
 
         Card(
