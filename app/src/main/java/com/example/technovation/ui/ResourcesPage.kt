@@ -3,8 +3,10 @@ package com.example.technovation.ui
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,21 +17,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
@@ -37,23 +45,19 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.room3.Dao
 import androidx.room3.Database
@@ -74,27 +78,28 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-enum class Type {ARTICLE, VIDEO}
+enum class Type { ARTICLE, VIDEO }
 
 enum class Category {
-    EXERCISE, MEDITATION
+    EXERCISE,
+    MEDITATION,
+    HEALTH,
+    RECIPES
 }
 
-//Creating content of an item as a class for the database
 @Entity(tableName = "Resources_Database")
 data class Content(
     @PrimaryKey val contentId: Int,
     val title: String,
     val type: Type,
     val category: Category,
-    //"?" makes the field optional
     val htmlContent: String? = null,
     val videoUrl: String? = null,
     val saved: Boolean = false,
     val recommended: Boolean = false
-    )
+)
 
-//the Data Access Object is an interface defining SQL queries to database
+//data access object: where I define database interactions and queries
 @Dao
 interface ContentDao {
     @Query("SELECT * FROM Resources_Database")
@@ -106,73 +111,57 @@ interface ContentDao {
     @Query("SELECT * FROM Resources_Database WHERE saved = 1")
     fun getSaved(): Flow<List<Content>>
 
-    //Selects articles where the title contains some of the query, and applying filters
-    @Query("""SELECT * FROM Resources_Database
-        WHERE (:query = '' OR title LIKE '%' ||:query|| '%')
-        AND (:typeFilter = '' OR type = :typeFilter)
-        AND (:categoryFilter = '' OR category = :categoryFilter)
-    """)
-    //Defines the parameters for the search function
-    fun search(
-        query: String,
-        typeFilter: String,
-        categoryFilter: String
-    ): Flow<List<Content>>
+    @Query("SELECT * FROM Resources_Database WHERE type = :type")
+    fun filterByType(type: Type): Flow<List<Content>>
 
-   @Query("SELECT * FROM Resources_Database WHERE category = :category")
-   fun filterByCategory(category: Category): Flow<List<Content>>
+    @Query("SELECT * FROM Resources_Database WHERE contentId = :id")
+    fun getById(id: Int): Flow<Content?>
 
-   @Query("SELECT * FROM Resources_Database WHERE type = :type")
-   fun filterByType(type: Type): Flow<List<Content>>
+    @Query("UPDATE Resources_Database SET saved = :saved WHERE contentId = :id")
+    suspend fun updateSaved(id: Int, saved: Boolean)
 
-   @Query("UPDATE Resources_Database SET saved = :saved WHERE contentId = :id")
-   suspend fun updateSaved(id: Int, saved: Boolean)
+    @Query("UPDATE Resources_Database SET recommended = 0")
+    suspend fun clearAllRecommended()
 
-   @Query("SELECT * FROM Resources_Database WHERE contentId = :id")
-   fun getById(id: Int): Flow<Content?>
+    @Query("UPDATE Resources_Database SET recommended = 1 WHERE category IN (:categories)")
+    suspend fun setRecommendedForCategories(categories: List<String>)
+
+    @Query("UPDATE Resources_Database SET recommended = 1 WHERE contentId IN (:ids)")
+    suspend fun setRecommendedByIds(ids: List<Int>)
 }
 
-//These are needed to convert from the self-defined enum classes to actual data types
 class Converters {
-    @TypeConverter
-    fun fromType(value: Type): String = value.name
-
-    @TypeConverter
-    fun toType(value: String): Type = Type.valueOf(value)
-
-    @TypeConverter
-    fun fromCategory(value: Category): String = value.name
-
-    @TypeConverter
-    fun toCategory(value: String): Category = Category.valueOf(value)
+    @TypeConverter fun fromType(value: Type): String = value.name
+    @TypeConverter fun toType(value: String): Type = Type.valueOf(value)
+    @TypeConverter fun toCategory(value: String): Category = Category.valueOf(value)
 }
 
 @SuppressLint("RestrictedApi")
 @Database(entities = [Content::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)
-abstract class ResourcesDatabase : RoomDatabase(){
+abstract class ResourcesDatabase : RoomDatabase() {
     abstract fun contentDao(): ContentDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: ResourcesDatabase? = null
+        @Volatile private var INSTANCE: ResourcesDatabase? = null
 
-        //this means the database is only created once avoiding conflicts
         fun getDatabase(context: Context): ResourcesDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
                     context.applicationContext,
                     ResourcesDatabase::class.java,
                     "Resources_Database"
-                ).createFromAsset("Resources_Database.db").build().also { INSTANCE = it }
+                    //building the database in Room from the predefined database in db browser
+                ).createFromAsset("Resources_Database.db")
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }
 }
 
 data class FilterState(
-    val selectedKeywords: Set<Category> = emptySet(),
-    val selectedTypes: Set<Type> = emptySet()
+    val selectedCategories: Set<Category> = emptySet()
 )
 
 class ResourcesViewModel(application: Application) : AndroidViewModel(application) {
@@ -184,10 +173,10 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
     val saved: StateFlow<List<Content>> = dao.getSaved()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val articles: StateFlow<List<Content>> = dao.filterByType(Type.ARTICLE)
+    val recommended: StateFlow<List<Content>> = dao.displayRecommended()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val videos: StateFlow<List<Content>> = dao.filterByType(Type.VIDEO)
+    val articles: StateFlow<List<Content>> = dao.filterByType(Type.ARTICLE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val filteredContent: StateFlow<List<Content>> = combine(
@@ -198,23 +187,17 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
                 list.filter { content ->
                     val matchesQuery = query.isBlank() ||
                             content.title.contains(query, ignoreCase = true)
-                    val matchesType = filter.selectedTypes.isEmpty() ||
-                            content.type in filter.selectedTypes
-                    val matchesKeyword = filter.selectedKeywords.isEmpty() ||
-                            content.category in filter.selectedKeywords
-                    matchesQuery && matchesType && matchesKeyword
+                    val matchesCategory = filter.selectedCategories.isEmpty() ||
+                            content.category in filter.selectedCategories
+                    matchesQuery && matchesCategory
                 }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun updateSearchQuery(query: String) {
-        searchQuery.value = query
-    }
+    fun updateSearchQuery(query: String) { searchQuery.value = query }
 
-    fun updateFilter(filter: FilterState) {
-        filterState.value = filter
-    }
+    fun updateFilter(filter: FilterState) { filterState.value = filter }
 
     fun toggleSaved(content: Content) {
         viewModelScope.launch {
@@ -223,6 +206,285 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun getContentById(id: Int): Flow<Content?> = dao.getById(id)
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun refreshRecommendations(allEntriesViewModel: AllJournalEntries) {
+        viewModelScope.launch {
+            val symptomAndActivityNames = allEntriesViewModel.history.flatMap { entry ->
+                entry.physical_symptoms_entry.map { it.name } +
+                        entry.mental_symptoms_entry.map { it.name } +
+                        entry.activities_entry.map { it.name } +
+                        entry.text_in_journal.split(" ", ",", ".", "!", "?")
+            }.map { it.trim().lowercase() }.filter { it.length > 3 }.toSet()
+
+            dao.clearAllRecommended()
+
+            if (symptomAndActivityNames.isNotEmpty()) {
+                val allContent = dao.displayAll().map { it }.stateIn(viewModelScope).value
+                val matchingIds = allContent.filter { content ->
+                    val titleWords = content.title.lowercase()
+                    symptomAndActivityNames.any { symptom -> titleWords.contains(symptom) }
+                }.map { it.contentId }
+
+                if (matchingIds.isNotEmpty()) {
+                    dao.setRecommendedByIds(matchingIds)
+                }
+            }
+        }
+    }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ResourcesPage(
+    navController: NavController,
+    viewModel: ResourcesViewModel,
+    allEntriesViewModel: AllJournalEntries
+) {
+    val articles by viewModel.articles.collectAsStateWithLifecycle()
+    val recommended by viewModel.recommended.collectAsStateWithLifecycle()
+    val saved by viewModel.saved.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val filterState by viewModel.filterState.collectAsStateWithLifecycle()
+    val filteredContent by viewModel.filteredContent.collectAsStateWithLifecycle()
+
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    var showSaved by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshRecommendations(allEntriesViewModel)
+    }
+
+    val isSearchOrFilterActive = searchQuery.isNotBlank() ||
+            filterState.selectedCategories.isNotEmpty()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        SearchBar(
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            inputField = {
+                SearchBarDefaults.InputField(
+                    query = searchQuery,
+                    onQueryChange = { viewModel.updateSearchQuery(it) },
+                    onSearch = { expanded = false },
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                    placeholder = { Text("Search articles") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    }
+                )
+            },
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            filteredContent.forEach { content ->
+                ListItem(
+                    headlineContent = { Text(content.title) },
+                    supportingContent = {
+                        Text(content.category.name.lowercase().replaceFirstChar { it.uppercase() })
+                    },
+                    modifier = Modifier.clickable {
+                        viewModel.updateSearchQuery(content.title)
+                        expanded = false
+                        navController.navigate("detail/${content.contentId}")
+                    }
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(Category.entries) { category ->
+                    FilterChip(
+                        selected = category in filterState.selectedCategories,
+                        onClick = {
+                            val current = filterState.selectedCategories
+                            viewModel.updateFilter(
+                                filterState.copy(
+                                    selectedCategories = if (category in current)
+                                        current - category
+                                    else
+                                        current + category
+                                )
+                            )
+                        },
+                        label = {
+                            Text(category.name.lowercase().replaceFirstChar { it.uppercase() })
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isSearchOrFilterActive) {
+                Text(
+                    text = "Results (${filteredContent.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                filteredContent.forEach { article ->
+                    ArticleCard(
+                        article = article,
+                        onClick = { navController.navigate("detail/${article.contentId}") },
+                        onBookmarkClick = { viewModel.toggleSaved(article) }
+                    )
+                }
+            } else {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSaved = !showSaved },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = "Saved",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Saved articles",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                        Text(
+                            text = "${saved.size}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+
+                if (showSaved) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (saved.isEmpty()) {
+                        Text(
+                            text = "Nothing saved yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    } else {
+                        saved.forEach { article ->
+                            ArticleCard(
+                                article = article,
+                                onClick = { navController.navigate("detail/${article.contentId}") },
+                                onBookmarkClick = { viewModel.toggleSaved(article) }
+                            )
+                        }
+                    }
+                }
+
+                if (recommended.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = "Recommended for you",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    recommended.forEach { article ->
+                        ArticleCard(
+                            article = article,
+                            onClick = { navController.navigate("detail/${article.contentId}") },
+                            onBookmarkClick = { viewModel.toggleSaved(article) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "Articles",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                articles.forEach { article ->
+                    ArticleCard(
+                        article = article,
+                        onClick = { navController.navigate("detail/${article.contentId}") },
+                        onBookmarkClick = { viewModel.toggleSaved(article) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun ArticleCard(
+    article: Content,
+    onClick: () -> Unit,
+    onBookmarkClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = article.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = article.category.name
+                        .lowercase()
+                        .replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = onBookmarkClick) {
+                Icon(
+                    imageVector = if (article.saved) Icons.Default.Favorite
+                    else Icons.Default.FavoriteBorder,
+                    contentDescription = if (article.saved) "Unsave" else "Save",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -244,6 +506,16 @@ fun ArticleDetailScreen(
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.toggleSaved(article) }) {
+                            Icon(
+                                imageVector = if (article.saved) Icons.Default.Favorite
+                                else Icons.Default.FavoriteBorder,
+                                contentDescription = if (article.saved) "Unsave" else "Save",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 )
             }
@@ -261,7 +533,7 @@ fun ArticleDetailScreen(
                         <html><head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <style>
-                          body { font-family: sans-serif; font-size: 16px; 
+                          body { font-family: sans-serif; font-size: 16px;
                                  line-height: 1.6; padding: 12px; }
                           img { max-width: 100%; height: auto; }
                         </style>
@@ -276,111 +548,5 @@ fun ArticleDetailScreen(
         }
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ResourcesPage(
-    navController: NavController,
-    viewModel: ResourcesViewModel
-){
-    val articles by viewModel.articles.collectAsStateWithLifecycle()
-
-    Column(
-        modifier = Modifier.fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ){
-        Box(modifier = Modifier.fillMaxWidth().semantics {isTraversalGroup = true})
-        {
-            //search bar here
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        data class CategoryTile(val label: String, val icon: ImageVector, val route: String)
-
-        //placeholder symbols for now
-        val tiles = listOf(
-            CategoryTile("Articles", Icons.Default.Menu, "articles"),
-            CategoryTile("Healthy Recipes", Icons.Default.ShoppingCart, "recipes"),
-            CategoryTile("Exercise & Meditation Videos", Icons.Default.Person, "videos"),
-            CategoryTile("Saved", Icons.Default.Favorite, "saved")
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            tiles.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { tile ->
-                        Card(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(100.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = tile.icon,
-                                    contentDescription = tile.label,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = tile.label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
-                        }
-                    }
-                    if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "Articles",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        articles.forEach { article ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clickable { navController.navigate("detail/${article.contentId}") },
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = article.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-//                    article.caption?.let {
-//                        Spacer(modifier = Modifier.height(4.dp))
-//                        Text(
-//                            text = it,
-//                            style = MaterialTheme.typography.bodySmall,
-//                            color = MaterialTheme.colorScheme.onSurfaceVariant
-//                        )
-//                    }
-                }
-            }
-        }
     }
 }
