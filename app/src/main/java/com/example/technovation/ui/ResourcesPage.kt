@@ -211,10 +211,10 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
     fun refreshRecommendations(allEntriesViewModel: AllJournalEntries) {
         viewModelScope.launch {
             val symptomAndActivityNames = allEntriesViewModel.history.flatMap { entry ->
-                entry.physical_symptoms_entry.map { it.name } +
-                        entry.mental_symptoms_entry.map { it.name } +
-                        entry.activities_entry.map { it.name } +
-                        entry.text_in_journal.split(" ", ",", ".", "!", "?")
+                entry.physicalSymptomsEntry.map { it.name } +
+                        entry.mentalSymptomsEntry.map { it.name } +
+                        entry.activitiesEntry.map { it.name } +
+                        entry.textInJournal.split(" ", ",", ".", "!", "?")
             }.map { it.trim().lowercase() }.filter { it.length > 3 }.toSet()
 
             dao.clearAllRecommended()
