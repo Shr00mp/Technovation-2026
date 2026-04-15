@@ -86,17 +86,16 @@ fun Home(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            //Need to get information from the login once done
-            "Good afternoon, NAME",
-            fontSize = 35.sp,
+            "Welcome back!",
+            fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
         )
 
-        Spacer(modifier=Modifier.height(55.dp))
+        Spacer(modifier=Modifier.height(20.dp))
 
         Text(
-            "How are you feeling today?",
+            "Have you journalled today?",
             fontSize = 25.sp,
             modifier=Modifier.align(Alignment.Start)
                 .padding(20.dp, 15.dp)
@@ -133,7 +132,7 @@ fun Home(
             }
         }
 
-        Spacer(modifier=Modifier.height(35.dp))
+        Spacer(modifier=Modifier.height(20.dp))
 
         Text(
             "Here is your next medication",
@@ -167,7 +166,7 @@ fun Home(
         Spacer(modifier=Modifier.height(20.dp))
 
         Text(
-            "Here is a your daily recommended article",
+            "Here is your daily recommended article",
             fontSize = 25.sp,
             modifier=Modifier
                 .align(Alignment.Start)

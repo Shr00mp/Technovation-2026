@@ -7,6 +7,7 @@ import android.os.Build
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -96,7 +100,8 @@ data class Content(
     val htmlContent: String? = null,
     val videoUrl: String? = null,
     val saved: Boolean = false,
-    val recommended: Boolean = false
+    val recommended: Boolean = false,
+    val imageRes: String? = null
 )
 
 //data access object: where I define database interactions and queries
@@ -137,7 +142,7 @@ class Converters {
 }
 
 @SuppressLint("RestrictedApi")
-@Database(entities = [Content::class], version = 1, exportSchema = false)
+@Database(entities = [Content::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ResourcesDatabase : RoomDatabase() {
     abstract fun contentDao(): ContentDao
@@ -153,6 +158,7 @@ abstract class ResourcesDatabase : RoomDatabase() {
                     "Resources_Database"
                     //building the database in Room from the predefined database in db browser
                 ).createFromAsset("Resources_Database.db")
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }
@@ -211,11 +217,12 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
     fun refreshRecommendations(allEntriesViewModel: AllJournalEntries) {
         viewModelScope.launch {
             val symptomAndActivityNames = allEntriesViewModel.history.flatMap { entry ->
-                entry.physical_symptoms_entry.map { it.name } +
-                        entry.mental_symptoms_entry.map { it.name } +
-                        entry.activities_entry.map { it.name } +
-                        entry.text_in_journal.split(" ", ",", ".", "!", "?")
-            }.map { it.trim().lowercase() }.filter { it.length > 3 }.toSet()
+                entry.physicalSymptomsEntry.map { it.name } +
+                entry.mentalSymptomsEntry.map { it.name } +   // fix field name here
+                entry.activitiesEntry.map { it.name } +
+                entry.textInJournal.split(",", " ", ".", "!", "?")
+                    .map { it.trim().lowercase() }
+            }
 
             dao.clearAllRecommended()
 
@@ -445,6 +452,12 @@ fun ArticleCard(
     onClick: () -> Unit,
     onBookmarkClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val imageResId: Int? = article.imageRes?.let { resName ->
+        val id = context.resources.getIdentifier(resName, "drawable", context.packageName)
+        if (id != 0) id else null
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -452,40 +465,56 @@ fun ArticleCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = article.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = article.category.name
-                        .lowercase()
-                        .replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+        Column {
+            // Cover image — only shown when the article has an imageRes set in the DB
+            if (imageResId != null) {
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(id = imageResId),
+                    contentDescription = article.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
                 )
             }
-            IconButton(onClick = onBookmarkClick) {
-                Icon(
-                    imageVector = if (article.saved) Icons.Default.Favorite
-                    else Icons.Default.FavoriteBorder,
-                    contentDescription = if (article.saved) "Unsave" else "Save",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = article.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = article.category.name
+                            .lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onBookmarkClick) {
+                    Icon(
+                        imageVector = if (article.saved) Icons.Default.Favorite
+                        else Icons.Default.FavoriteBorder,
+                        contentDescription = if (article.saved) "Unsave" else "Save",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
