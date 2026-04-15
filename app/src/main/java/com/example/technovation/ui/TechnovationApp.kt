@@ -57,7 +57,8 @@ fun TechnovationApp(
                 Home(navController = navController,
                     modifier = modifier,
                     allEntriesViewModel = allJournalEntries,
-                    medicationsViewModel = allMedicationsViewModel)
+                    medicationsViewModel = allMedicationsViewModel,
+                    resourcesViewModel = resourcesViewModel)
             }
             composable(route = AppPages.ResourcesPage.title){
                 ResourcesPage(navController = navController,
