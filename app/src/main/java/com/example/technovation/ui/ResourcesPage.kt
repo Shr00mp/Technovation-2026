@@ -213,28 +213,61 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun getContentById(id: Int): Flow<Content?> = dao.getById(id)
 
+    private val sharedPrefs = application.getSharedPreferences("recom_prefs", Context.MODE_PRIVATE)
+
+    private fun shouldRefresh(): Boolean {
+        val lastRefresh = sharedPrefs.getLong("last_refresh_timestamp", 0L)
+        val currentTime = System.currentTimeMillis()
+        val oneDayInMillis = 24 * 60 * 60 * 1000
+
+        return (currentTime - lastRefresh) > oneDayInMillis
+    }
+
+    private fun markRefreshed() {
+        sharedPrefs.edit().putLong("last_refresh_timestamp", System.currentTimeMillis()).apply()
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun refreshRecommendations(allEntriesViewModel: AllJournalEntries) {
+        // Only continues if a day has passed
+        if (!shouldRefresh()) return
+
         viewModelScope.launch {
-            val symptomAndActivityNames = allEntriesViewModel.history.flatMap { entry ->
-                entry.physicalSymptomsEntry.map { it.name } +
-                entry.mentalSymptomsEntry.map { it.name } +   // fix field name here
-                entry.activitiesEntry.map { it.name } +
-                entry.textInJournal.split(",", " ", ".", "!", "?")
-                    .map { it.trim().lowercase() }
-            }
+            // gets keywords from the journal
+            val keywords = allEntriesViewModel.history.flatMap { entry ->
+                entry.physicalSymptomsEntry.map { it.name.lowercase() } +
+                        entry.mentalSymptomsEntry.map { it.name.lowercase() } +
+                        entry.activitiesEntry.map { it.name.lowercase() } +
+                        entry.textInJournal.split(",", " ", ".", "!", "?").map { it.trim().lowercase() }
+            }.filter { it.isNotBlank() }.toSet()
 
-            dao.clearAllRecommended()
+            if (keywords.isEmpty()) return@launch
 
-            if (symptomAndActivityNames.isNotEmpty()) {
-                val allContent = dao.displayAll().map { it }.stateIn(viewModelScope).value
-                val matchingIds = allContent.filter { content ->
-                    val titleWords = content.title.lowercase()
-                    symptomAndActivityNames.any { symptom -> titleWords.contains(symptom) }
-                }.map { it.contentId }
+            // gets the articles from the database and matches them up with journal entries
+            val allContent = dao.displayAll().map { it }.stateIn(viewModelScope).value
 
-                if (matchingIds.isNotEmpty()) {
-                    dao.setRecommendedByIds(matchingIds)
+            val candidateIds = allContent.filter { content ->
+                val titleWords = content.title.lowercase()
+                keywords.any { keyword -> titleWords.contains(keyword) }
+            }.map { it.contentId }
+
+            // If there are enough articles recommended to refresh them, shuffle and refresh (the next day)
+            if (candidateIds.isNotEmpty()) {
+                val currentRecommendedIds = recommended.value.map { it.contentId }.toSet()
+
+                // Check if there are new articles that aren't currently recommended
+                val newOptionsAvailable = candidateIds.any { it !in currentRecommendedIds }
+
+                if (newOptionsAvailable || currentRecommendedIds.isEmpty()) {
+                    // shuffle the candidates and take only the top 3
+                    val selectedIds = candidateIds.shuffled().take(3)
+
+                    //updation to the database
+                    dao.clearAllRecommended()
+                    dao.setRecommendedByIds(selectedIds)
+
+                    // Update timestamp so won't refresh until next day
+                    markRefreshed()
                 }
             }
         }
