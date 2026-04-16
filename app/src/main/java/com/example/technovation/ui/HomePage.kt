@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +53,9 @@ fun Home(
     loginSignupViewmodel: LoginSignupViewmodel) {
     val recommendedArticles by resourcesViewModel.recommended.collectAsStateWithLifecycle()
     val topArticle = recommendedArticles.firstOrNull()
-    var showDialog by remember {mutableStateOf(false)
+    var showDialog by remember {mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        allEntriesViewModel.initialise(symptomsViewModel)
     }
     if (showDialog) {
         AlreadyMadeEntryDialogue(
