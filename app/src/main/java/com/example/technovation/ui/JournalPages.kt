@@ -547,15 +547,15 @@ class SymptomsViewModel: ViewModel() {
         // 3 = an activity
         when (type) {
             1 -> {
-                val newSymptom = Symptom(id = physicalSymptoms.size, name = symptomName, selected = false)
+                val newSymptom = Symptom(id = physicalSymptoms.size+1, name = symptomName, selected = false)
                 physicalSymptoms.add(newSymptom)
             }
             2 -> {
-                val newSymptom = Symptom(id = mentalSymptoms.size, name = symptomName, selected = false)
+                val newSymptom = Symptom(id = mentalSymptoms.size+1, name = symptomName, selected = false)
                 mentalSymptoms.add(newSymptom)
             }
             else -> {
-                val newSymptom = Symptom(id = activities_list.size, name = symptomName, selected = false)
+                val newSymptom = Symptom(id = activities_list.size+1, name = symptomName, selected = false)
                 activities_list.add(newSymptom)
             }
         }
