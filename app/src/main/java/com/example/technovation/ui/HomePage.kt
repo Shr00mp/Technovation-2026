@@ -3,6 +3,7 @@ package com.example.technovation.ui
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
@@ -28,9 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import java.time.LocalDate
@@ -42,8 +47,12 @@ fun Home(
     navController: NavController,
     allEntriesViewModel: AllJournalEntries,
     symptomsViewModel: SymptomsViewModel = viewModel(),
-    medicationsViewModel: MedicationViewModel = viewModel()) {
-    var showDialog by remember {mutableStateOf(false)}
+    medicationsViewModel: MedicationViewModel = viewModel(),
+    resourcesViewModel: ResourcesViewModel = viewModel()) {
+    val recommendedArticles by resourcesViewModel.recommended.collectAsStateWithLifecycle()
+    val topArticle = recommendedArticles.firstOrNull()
+    var showDialog by remember {mutableStateOf(false)
+    }
     if (showDialog) {
         AlreadyMadeEntryDialogue(
             onDismiss = {showDialog= false},
@@ -81,22 +90,22 @@ fun Home(
     Column(
         modifier=modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            //Need to get information from the login once done
-            "Good afternoon, NAME",
-            fontSize = 35.sp,
+            "Welcome back!",
+            fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
         )
 
-        Spacer(modifier=Modifier.height(55.dp))
+        Spacer(modifier=Modifier.height(20.dp))
 
         Text(
-            "How are you feeling today?",
+            "Have you journalled today?",
             fontSize = 25.sp,
             modifier=Modifier.align(Alignment.Start)
                 .padding(20.dp, 15.dp)
@@ -133,7 +142,7 @@ fun Home(
             }
         }
 
-        Spacer(modifier=Modifier.height(35.dp))
+        Spacer(modifier=Modifier.height(20.dp))
 
         Text(
             "Here is your next medication",
@@ -167,19 +176,39 @@ fun Home(
         Spacer(modifier=Modifier.height(20.dp))
 
         Text(
-            "Here is a your daily recommended article",
+            "Your daily recommendation",
             fontSize = 25.sp,
-            modifier=Modifier
+            modifier = Modifier
                 .align(Alignment.Start)
                 .padding(20.dp, 15.dp)
         )
 
-        Card(
-            modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
-        ) {
-            Text("Article", fontSize=20.sp)
+        if (topArticle != null) {
+            Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                ArticleCard(
+                    article = topArticle,
+                    onClick = { navController.navigate("detail/${topArticle.contentId}") },
+                    onBookmarkClick = { resourcesViewModel.toggleSaved(topArticle) }
+                )
+            }
+        } else {
+            // if no recommendations are found yet
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Text(
+                    "Complete a journal entry to see personalized recommendations!",
+                    modifier = Modifier.padding(25.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
     }
 }

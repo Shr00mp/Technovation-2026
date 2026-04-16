@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.technovation.R
@@ -315,12 +316,16 @@ fun MedicationTaskCard(
 fun MedicationPage(
     modifier: Modifier = Modifier,
     navController: NavController,
-    viewModel: MedicationViewModel = viewModel())
+    viewModel: MedicationViewModel = viewModel(),
+    resourcesViewModel: ResourcesViewModel = viewModel())
 {
     val scrollState = rememberScrollState()
     val remaining = viewModel.remainingTasks
     val completed = viewModel.completedTasks
 
+    val allArticles by resourcesViewModel.articles.collectAsStateWithLifecycle()
+
+    val medicationArticle = allArticles.find { it.title.equals("Managing your medication", ignoreCase = true)}
 
     Scaffold(
         floatingActionButton = {
@@ -336,7 +341,7 @@ fun MedicationPage(
             }
         },
         floatingActionButtonPosition = FabPosition.Center
-    ) {paddingValues ->
+    ) { paddingValues ->
         Column(
             modifier=modifier
                 .fillMaxSize()
@@ -346,6 +351,15 @@ fun MedicationPage(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            if (medicationArticle != null) {
+                ArticleCard(
+                    article = medicationArticle,
+                    onClick = { navController.navigate("detail/${medicationArticle.contentId}") },
+                    onBookmarkClick = { resourcesViewModel.toggleSaved(medicationArticle) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 "Your Medication Reminders",
                 fontSize = 30.sp,
