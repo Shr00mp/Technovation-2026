@@ -48,7 +48,8 @@ fun Home(
     allEntriesViewModel: AllJournalEntries,
     symptomsViewModel: SymptomsViewModel = viewModel(),
     medicationsViewModel: MedicationViewModel = viewModel(),
-    resourcesViewModel: ResourcesViewModel = viewModel()) {
+    resourcesViewModel: ResourcesViewModel = viewModel(),
+    loginSignupViewmodel: LoginSignupViewmodel) {
     val recommendedArticles by resourcesViewModel.recommended.collectAsStateWithLifecycle()
     val topArticle = recommendedArticles.firstOrNull()
     var showDialog by remember {mutableStateOf(false)
@@ -96,7 +97,7 @@ fun Home(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            "Welcome back!",
+            "Welcome back, ${loginSignupViewmodel.currentUserName}",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally)
