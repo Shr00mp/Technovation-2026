@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -92,6 +93,7 @@ fun JournalPage(
     allEntriesViewModel: AllJournalEntries = viewModel(),
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
+    var showAddQuestoinDialogue by remember {mutableStateOf(false)}
     LaunchedEffect(Unit) {
         allEntriesViewModel.initialise(symptomsViewModel)
     }
@@ -163,7 +165,9 @@ fun JournalPage(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(25.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(25.dp)
             ) {
                 Text("Make a new journal entry", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
@@ -190,7 +194,9 @@ fun JournalPage(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(25.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(25.dp)
             ) {
                 Text("See your past entries", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
@@ -218,7 +224,9 @@ fun JournalPage(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(25.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(25.dp)
             ) {
                 Text("See your statistics", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
@@ -230,13 +238,188 @@ fun JournalPage(
                 )
             }
         }
+
+        Spacer(modifier=Modifier.height(20.dp))
+
+        Card(
+            onClick = {
+                showAddQuestoinDialogue=true
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 10.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(25.dp)
+            ) {
+                Text("Add a specific question to your journal", fontSize = 22.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f))
+                Spacer(modifier=Modifier.width(20.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Arrow",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+        }
+
+        if (showAddQuestoinDialogue) {
+            AddQuestionDialogue(
+                { showAddQuestoinDialogue = false },
+                { text: String, isYesOrNo: Boolean, isTextBox: Boolean ->
+                    val type = if (isYesOrNo) 1 else 2
+                    symptomsViewModel.addCustomQuestion(text, type)
+                    showAddQuestoinDialogue = false
+                }
+            )
+        }
     }
 }
+
+@Composable
+fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolean, Boolean) -> Unit) {
+    var isYesOrNo by remember { mutableStateOf(true) }
+    var isTextBox by remember { mutableStateOf(false) }
+    var question: String by remember { mutableStateOf("") }
+    Dialog(
+        onDismissRequest = { onDismissRequest() }) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(660.dp)
+                .padding(20.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Spacer(modifier=Modifier.height(25.dp))
+                Text(
+                    text = "Add Specific Question",
+                    fontWeight = FontWeight.Bold,
+                    fontSize=25.sp,
+                    modifier = Modifier.padding(20.dp),
+                )
+                Spacer(modifier=Modifier.height(10.dp))
+                Text(
+                    text="You may choose to customise your journal by adding some specific questions.",
+                    modifier=Modifier.padding(horizontal = 20.dp)
+                )
+                Spacer(modifier=Modifier.height(5.dp))
+                Text(
+                    text="This feature may be of particular interest to clinicians that want to monitor whether patients react badly to certain medication.",
+                    modifier=Modifier.padding(horizontal=20.dp)
+                )
+
+                Spacer(modifier=Modifier.height(30.dp))
+
+                Text(
+                    text="Please enter the question below.",
+                    modifier=Modifier
+                        .padding(horizontal = 16.dp)
+                        .align(Alignment.Start),
+                    fontSize = 20.sp
+                )
+                OutlinedTextField(
+                    value = question,
+                    onValueChange = { enteredText ->
+                        question = enteredText },
+                    label = { Text("Question") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier=Modifier.height(30.dp))
+
+                Text(
+                    text="You can either choose a yes or no question or an open-ended one",
+                    modifier=Modifier
+                        .padding(horizontal = 16.dp)
+                        .align(Alignment.Start),
+                    fontSize = 20.sp
+                )
+                Spacer(modifier=Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = isYesOrNo,
+                        onCheckedChange = { isYesOrNo=true; isTextBox=false }
+                    )
+                    Text(
+                        text = "Yes or No question",
+                        fontSize = 18.sp
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = isTextBox,
+                        onCheckedChange = { isTextBox = true; isYesOrNo=false}
+                    )
+                    Text(
+                        text = "Open-ended question",
+                        fontSize = 18.sp
+                    )
+                }
+                Spacer(modifier=Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    TextButton(
+                        onClick = { onDismissRequest() },
+                        modifier = Modifier.padding(8.dp),
+                    ) {
+                        Text("Dismiss", fontSize = 20.sp)
+                    }
+                    TextButton(
+                        onClick = { onConfirm(question, isYesOrNo, isTextBox) },
+                        modifier = Modifier.padding(8.dp),
+                    ) {
+                        Text("Confirm", fontSize = 20.sp)
+                    }
+                }
+                Spacer(modifier=Modifier.height(20.dp))
+            }
+        }
+    }
+}
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 data class Symptom(
     val id: Int,
     val name: String,
     var selected: Boolean = false
+)
+
+data class CustomQuestion(
+    val id: Int,
+    val questionText: String,
+    val type: Int // 1 for yes or no and 2 for open-ended question
+)
+
+data class CustomAnswer(
+    val questionId: Int,
+    val answer: String // Is either yes, no or the text input
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -261,6 +444,14 @@ class SymptomsViewModel: ViewModel() {
         Symptom(3, "Walking"),
         Symptom(4, "Dancing")
     )
+
+    var customQuestionList = mutableStateListOf<CustomQuestion>()
+    // Note that int is id of question and string is the user's answer
+    var tempCustomAnswers = mutableStateMapOf<Int, String>()
+    fun addCustomQuestion(text: String, type: Int) {
+        val newId = if (customQuestionList.isEmpty()) 1 else customQuestionList.maxOf { it.id } + 1
+        customQuestionList.add(CustomQuestion(id = newId, questionText = text, type = type))
+    }
 
     val allSymptomsNames = (physicalSymptoms + mentalSymptoms).map { it.name }
     val symptomsAndActivityNames = (physicalSymptoms + mentalSymptoms + activities_list).map { it.name }
@@ -323,6 +514,7 @@ class SymptomsViewModel: ViewModel() {
         tempMood = 3
         tempText = ""
         pastEntryDate = LocalDate.now()
+        tempCustomAnswers.clear()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -400,6 +592,11 @@ class SymptomsViewModel: ViewModel() {
         pastEntryDate = entry.date
         tempMood = entry.mood
         tempText = entry.textInJournal
+        // Note that we don't need to clear anything here because we reset selections right before
+        for (answer in entry.customAnswers) {
+            tempCustomAnswers[answer.questionId] = answer.answer
+        }
+
     }
 }
 
@@ -427,7 +624,7 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 
 @Composable
 fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int, onConfirm: (String) -> Unit) {
-    // Sadly Alerty Dialog dimensions seem to be fixed so I can't actually make things bigger
+    // Sadly Alert Dialog dimensions seem to be fixed so I can't actually make things bigger
     var symptomName by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = { onDismissRequest() },
@@ -589,6 +786,74 @@ fun NewJournalEntry(
                                     .alpha(if (symptomsViewModel.tempMood == level) 1f else 0.3f)
                             )
                         }
+                    }
+                }
+            }
+
+        }
+
+        if (!symptomsViewModel.customQuestionList.isEmpty()) {
+            Spacer(modifier=Modifier.height(40.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .absolutePadding(10.dp, 0.dp, 10.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 30.dp)
+                ) {
+                    Text(
+                        "Custom Questions",
+                        fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                        modifier=Modifier.padding(horizontal = 20.dp)
+                    )
+                    Spacer(modifier=Modifier.height(25.dp))
+                    symptomsViewModel.customQuestionList.forEach { question ->
+                        Text(question.questionText, fontSize = 20.sp,
+                            modifier=Modifier
+                                .align(Alignment.Start)
+                                .padding(horizontal = 20.dp))
+                        if (question.type==1) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = symptomsViewModel.tempCustomAnswers[question.id] == "Yes",
+                                    onCheckedChange = { symptomsViewModel.tempCustomAnswers[question.id] = "Yes" }
+                                )
+                                Text(
+                                    text = "Yes",
+                                    fontSize = 18.sp
+                                )
+                                Spacer(modifier = Modifier.width(20.dp))
+                                Checkbox(
+                                    checked = symptomsViewModel.tempCustomAnswers[question.id] == "No",
+                                    onCheckedChange = { symptomsViewModel.tempCustomAnswers[question.id] = "No" }
+                                )
+                                Text(
+                                    text = "No",
+                                    fontSize = 18.sp
+                                )
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = symptomsViewModel.tempCustomAnswers[question.id] ?: "",
+                                onValueChange = { symptomsViewModel.tempCustomAnswers[question.id] = it },
+                                label = { Text("Your answer") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp),
+
+                                )
+                        }
+                        Spacer(modifier=Modifier.height(30.dp))
                     }
                 }
             }
@@ -770,13 +1035,17 @@ fun NewJournalEntry(
 
         Button(
             onClick = {
+                val customAnswerQuestions = symptomsViewModel.tempCustomAnswers.map { (questionID, text) ->
+                    CustomAnswer(questionId = questionID, answer = text)
+                }
                 val newEntry = Entry(
                     date = symptomsViewModel.pastEntryDate,
                     mood = symptomsViewModel.tempMood,
                     physicalSymptomsEntry = symptomsViewModel.getSelectedPhysicalSymptoms(),
                     mentalSymptomsEntry = symptomsViewModel.getSelectedMentalSymptoms(),
                     activitiesEntry = symptomsViewModel.getSelectedActivities(),
-                    textInJournal = symptomsViewModel.tempText
+                    textInJournal = symptomsViewModel.tempText,
+                    customAnswers = customAnswerQuestions
                 )
                 allEntriesViewModel.addEntry(newEntry)
                 navController.navigate(AppPages.Journal.title)
@@ -879,6 +1148,7 @@ data class Entry(
     val mentalSymptomsEntry: List<Symptom>,
     val activitiesEntry: List<Symptom>,
     val textInJournal: String,
+    val customAnswers: List<CustomAnswer> = emptyList()
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -886,6 +1156,8 @@ class AllJournalEntries(): ViewModel() {
     val history = mutableStateListOf<Entry>()
 
     var initialised = false
+
+    val customQuestions = mutableStateListOf<CustomQuestion>()
     fun initialise(symptomsViewModel: SymptomsViewModel) {
         if (!initialised) {
             history.addAll(addExampleData(
@@ -941,7 +1213,8 @@ class AllJournalEntries(): ViewModel() {
 fun PastEntryCard(
     entry: Entry,
     onDelete: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    symptomsViewModel: SymptomsViewModel = viewModel()
 ) {
     Card(
         modifier = Modifier
@@ -997,6 +1270,32 @@ fun PastEntryCard(
             }
 
             Spacer(modifier=Modifier.height(5.dp))
+
+            entry.customAnswers.forEach {  customAnswer ->
+                val question = symptomsViewModel.customQuestionList.find { it.id == customAnswer.questionId }?.questionText?: "Blank question"
+                val answer = customAnswer.answer
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Question:", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(text=question, fontSize = 20.sp)
+                }
+                Spacer(modifier=Modifier.height(5.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Answer:", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(text=answer, fontSize = 20.sp)
+                }
+
+                Spacer(modifier=Modifier.height(20.dp))
+            }
 
             Row(
                 modifier = Modifier
@@ -1127,7 +1426,8 @@ fun PastEntries(
                         }
 
                         navController.navigate(AppPages.NewEntry.title)
-                    }
+                    },
+                    symptomsViewModel = symptomsViewModel
                     )
                 Spacer(modifier = Modifier.height(30.dp))
             }
@@ -1176,7 +1476,9 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
     }
     val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
     LineChart(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 22.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 22.dp),
         data = remember(entries) {
             listOf(
                 Line(
