@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -85,7 +86,7 @@ fun LoginPage(
         Spacer(modifier = Modifier.height(50.dp))
         // Image for the app logo
         Image(
-            painter = painterResource(id = R.drawable.placeholder_logo),
+            painter = painterResource(id = R.drawable.logo),
             contentDescription = "App logo",
             modifier = Modifier
                 .height(150.dp)
@@ -93,7 +94,7 @@ fun LoginPage(
                 .align(alignment = Alignment.CenterHorizontally)
         )
         Spacer(modifier = Modifier.height(35.dp))
-        Text("Welcome to APPNAME",
+        Text("Welcome to Uplift",
             modifier = Modifier.align(alignment = Alignment.CenterHorizontally),
             fontSize = 35.sp)
 
@@ -108,8 +109,11 @@ fun LoginPage(
             indicator = { tabPositions ->
                 TabRowDefaults.Indicator(
                     Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                    color = Color(0xff216869)
                 )
-            }
+            },
+            containerColor = Color.Transparent,
+            contentColor = Color(0xff216869)
         ) {
             tabs.forEachIndexed { index, title -> // For each tab in the list:
                 Tab(
@@ -121,7 +125,8 @@ fun LoginPage(
                             fontSize = 20.sp,
                             modifier = Modifier.absolutePadding(0.dp, 0.dp, 0.dp, 5.dp)
                         )
-                    }
+                    },
+                    selectedContentColor = Color(0xff216869)
                 )
             }
         }
@@ -194,10 +199,12 @@ fun LoginContent(navController: NavController, viewModel: LoginSignupViewmodel) 
             },
             modifier = Modifier
                 .align(alignment = Alignment.CenterHorizontally)
-                .height(50.dp)
-                .width(200.dp)
+                .width(400.dp)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(Color(0xff216869))
         ) {
-            Text("Log in", fontSize = 25.sp, color = Color.White)
+            Text("Log in", fontSize = 20.sp, color = Color.White)
         }
     }
 
@@ -321,10 +328,12 @@ fun SignupContent(navController: NavController, viewmodel: LoginSignupViewmodel)
             },
             modifier = Modifier
                 .align(alignment = Alignment.CenterHorizontally)
-                .height(50.dp)
-                .width(200.dp)
+                .width(400.dp)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(Color(0xff216869))
         ) {
-            Text("Sign up", fontSize = 25.sp, color = Color.White)
+            Text("Sign up", fontSize = 20.sp, color = Color.White)
         }
     }
 }

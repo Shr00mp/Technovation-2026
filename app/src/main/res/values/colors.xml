@@ -12,4 +12,18 @@
     <color name="background">#FFFFFCF7</color>
     <color name="secondary">#FF4A6670</color>
 
+    <color name="ink_black">#001219</color>
+    <color name="dark_teal">#005F73</color>
+    <color name="dark_cyan">#0A9396</color>
+    <color name="pearl_aqua">#94D2BD</color>
+    <color name="wheat">#E9D8A6</color>
+    <color name="golden_orange">#EE9B00</color>
+    <color name="burnt_caramel">#CA6702</color>
+    <color name="rusty_spice">#BB3E03</color>
+    <color name="oxidized_iron">#AE2012</color>
+    <color name="brown_red">#9B2226</color>
+
+
+
+
 </resources>

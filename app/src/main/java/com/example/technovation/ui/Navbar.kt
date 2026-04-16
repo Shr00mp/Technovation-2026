@@ -64,8 +64,10 @@ fun BottomNavigationBar(
     modifier: Modifier = Modifier
 ) {
     NavigationBar(
-        modifier = Modifier.clip(RoundedCornerShape(20.dp))
+        modifier = Modifier.clip(RoundedCornerShape(20.dp)),
+        containerColor = Color(0xffDCE1DE)
     ) {
+        val selectedColor = Color(0xff9CC5A1)
         //Home Page
         NavigationBarItem(
             selected = AppPages.HomePage.title == currentDestination?.route, // Mark as selected if current route matches Home route
@@ -74,7 +76,7 @@ fun BottomNavigationBar(
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
-                selectedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                selectedIndicatorColor = selectedColor,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 disabledIconColor = Color.Gray,
@@ -91,7 +93,7 @@ fun BottomNavigationBar(
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
-                selectedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                selectedIndicatorColor = selectedColor,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 disabledIconColor = Color.Gray,
@@ -108,7 +110,7 @@ fun BottomNavigationBar(
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
-                selectedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                selectedIndicatorColor = selectedColor,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 disabledIconColor = Color.Gray,
@@ -125,7 +127,7 @@ fun BottomNavigationBar(
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
-                selectedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                selectedIndicatorColor = selectedColor,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 disabledIconColor = Color.Gray,
@@ -142,7 +144,7 @@ fun BottomNavigationBar(
             colors = NavigationBarItemColors(
                 selectedIconColor = Color.Gray,
                 selectedTextColor = Color.Gray,
-                selectedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                selectedIndicatorColor = selectedColor,
                 unselectedIconColor = Color.Gray,
                 unselectedTextColor = Color.Gray,
                 disabledIconColor = Color.Gray,
