@@ -49,11 +49,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.technovation.R
 import com.google.gson.Gson
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -73,6 +75,7 @@ fun AudioPage(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
+    val teaGreen = colorResource(id = R.color.tea_green)
     Column(
         modifier=modifier
             .fillMaxSize()
@@ -82,9 +85,11 @@ fun AudioPage(
     ) {
         Text(
             "Audio Test",
-            fontSize = 30.sp,
+            fontSize = 35.sp,
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier = Modifier.height(55.dp))
@@ -94,7 +99,8 @@ fun AudioPage(
             fontSize = 20.sp,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 20.dp),
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -107,7 +113,8 @@ fun AudioPage(
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp, vertical = 10.dp),
             shape = RoundedCornerShape(16.dp),
-            colors= CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
+            colors= CardDefaults.cardColors(teaGreen
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -134,7 +141,7 @@ fun AudioPage(
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp, vertical = 10.dp),
             shape = RoundedCornerShape(16.dp),
-            colors= CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
+            colors= CardDefaults.cardColors(teaGreen)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

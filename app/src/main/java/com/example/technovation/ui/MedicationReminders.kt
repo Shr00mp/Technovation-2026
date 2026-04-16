@@ -3,7 +3,6 @@ package com.example.technovation.ui
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlarmManager
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -59,7 +58,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,7 +71,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.technovation.R
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -322,6 +322,7 @@ fun MedicationPage(
     val scrollState = rememberScrollState()
     val remaining = viewModel.remainingTasks
     val completed = viewModel.completedTasks
+    val teaGreen = colorResource(id = R.color.tea_green)
 
     val allArticles by resourcesViewModel.articles.collectAsStateWithLifecycle()
 
@@ -335,9 +336,12 @@ fun MedicationPage(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(60.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = teaGreen
+                )
             ) {
-                Text("Manage Medications", fontSize = 20.sp)
+                Text("Manage Medications", fontSize = 20.sp, color = Color.Black)
             }
         },
         floatingActionButtonPosition = FabPosition.Center
@@ -352,6 +356,14 @@ fun MedicationPage(
             verticalArrangement = Arrangement.Center
         ) {
             if (medicationArticle != null) {
+                Text(
+                    "Important information:",
+                    fontSize = 25.sp,
+                    modifier = Modifier
+                        .align(Alignment.Start),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(modifier = Modifier.height(20.dp))
                 ArticleCard(
                     article = medicationArticle,
                     onClick = { navController.navigate("detail/${medicationArticle.contentId}") },
@@ -364,16 +376,19 @@ fun MedicationPage(
                 "Your Medication Reminders",
                 fontSize = 30.sp,
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
+                    .align(Alignment.CenterHorizontally),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(35.dp))
 
             Text(
-                "Tasks left for today",
+                "Tasks left for today:",
                 fontSize = 25.sp,
                 modifier = Modifier
                     .align(Alignment.Start)
-                    .padding(20.dp, top=15.dp)
+                    .padding(20.dp, top=15.dp),
+                style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(20.dp))
             if (remaining.isEmpty()) {
@@ -417,11 +432,13 @@ fun ManageMedicationCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val paleGreen = colorResource(id = R.color.pale_green)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
