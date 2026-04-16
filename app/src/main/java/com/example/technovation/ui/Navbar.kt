@@ -49,7 +49,8 @@ enum class AppPages(var title: String) {
     MakeRecording(title="Make Recording"),
     PastRecordings(title="Past Recordings"),
     HomePage(title="Home"),
-    ResourcesPage(title="Articles");
+    ResourcesPage(title="Articles"),
+    LoginPage(title="Login");
 
     fun createRouteForAddingMedication(id: Int): String {
         return "$title/$id"

@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,11 +51,15 @@ fun Home(
     allEntriesViewModel: AllJournalEntries,
     symptomsViewModel: SymptomsViewModel = viewModel(),
     medicationsViewModel: MedicationViewModel = viewModel(),
-    resourcesViewModel: ResourcesViewModel = viewModel()) {
+    resourcesViewModel: ResourcesViewModel = viewModel(),
+    loginSignupViewmodel: LoginSignupViewmodel) {
     val recommendedArticles by resourcesViewModel.recommended.collectAsStateWithLifecycle()
     val topArticle = recommendedArticles.firstOrNull()
     var showDialog by remember {mutableStateOf(false) }
     val paleGreen = colorResource(id = R.color.pale_green)
+    LaunchedEffect(Unit) {
+        allEntriesViewModel.initialise(symptomsViewModel)
+    }
     if (showDialog) {
         AlreadyMadeEntryDialogue(
             onDismiss = {showDialog= false},
@@ -98,7 +103,7 @@ fun Home(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            "Welcome back!",
+            "Welcome back, ${loginSignupViewmodel.currentUserName}",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally),
