@@ -84,6 +84,15 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SpatialAudioOff
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
+import androidx.core.text.HtmlCompat
+import java.util.Locale
 
 enum class Type { ARTICLE, VIDEO }
 
@@ -570,6 +579,29 @@ fun ArticleDetailScreen(
     val content by viewModel.getContentById(contentId)
         .collectAsStateWithLifecycle(initialValue = null)
 
+    val context = LocalContext.current
+    val isSpeaking = remember { mutableStateOf(false) }
+    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+
+    DisposableEffect(Unit) {
+        var instance: TextToSpeech? = null
+        instance = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                instance?.language = Locale.getDefault()
+                instance?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {}
+                    override fun onDone(utteranceId: String?) { isSpeaking.value = false }
+                    override fun onError(utteranceId: String?) { isSpeaking.value = false }
+                })
+            }
+            tts.value = instance
+        }
+        onDispose {
+            instance?.stop()
+            instance?.shutdown()
+        }
+    }
+
     content?.let { article ->
         Scaffold(
             topBar = {
@@ -581,6 +613,26 @@ fun ArticleDetailScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = {
+                            val engine = tts.value ?: return@IconButton
+                            if (isSpeaking.value) {
+                                engine.stop()
+                                isSpeaking.value = false
+                            } else {
+                                val plainText = HtmlCompat.fromHtml(
+                                    article.htmlContent ?: "",
+                                    HtmlCompat.FROM_HTML_MODE_LEGACY
+                                ).toString()
+                                engine.speak(plainText, TextToSpeech.QUEUE_FLUSH, null, "tts_utterance")
+                                isSpeaking.value = true
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (isSpeaking.value) Icons.Default.Stop
+                                else Icons.Default.SpatialAudioOff,
+                                contentDescription = if (isSpeaking.value) "Stop reading" else "Read aloud"
+                            )
+                        }
                         IconButton(onClick = { viewModel.toggleSaved(article) }) {
                             Icon(
                                 imageVector = if (article.saved) Icons.Default.Favorite
