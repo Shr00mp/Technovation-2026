@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -72,6 +73,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.technovation.R
 import ir.ehsannarmani.compose_charts.ColumnChart
 import ir.ehsannarmani.compose_charts.LineChart
 import ir.ehsannarmani.compose_charts.models.AnimationMode
@@ -94,9 +96,9 @@ fun JournalPage(
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
     var showAddQuestoinDialogue by remember {mutableStateOf(false)}
-//    LaunchedEffect(Unit) {
-//        allEntriesViewModel.initialise(symptomsViewModel)
-//    }
+    LaunchedEffect(Unit) {
+        allEntriesViewModel.initialise(symptomsViewModel) }
+    val teaGreen = colorResource(id = R.color.tea_green)
 
     if (showDialog) {
         AlreadyMadeEntryDialogue(
@@ -135,20 +137,26 @@ fun JournalPage(
     Column(
         modifier=modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
             "Your Journal",
-            fontSize = 30.sp,
+            fontSize = 35.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier=Modifier.height(55.dp))
 
         Card(
+            colors = CardDefaults.cardColors(
+                containerColor = teaGreen
+            ),
             onClick = {
                 if (allEntriesViewModel.hasEntryForDay(LocalDate.now())) {
                     showDialog = true
@@ -160,8 +168,7 @@ fun JournalPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp, vertical = 10.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
+            shape = RoundedCornerShape(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -190,7 +197,9 @@ fun JournalPage(
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp, vertical = 10.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary),
+            colors = CardDefaults.cardColors(
+                containerColor = teaGreen
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -220,7 +229,9 @@ fun JournalPage(
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp, vertical = 10.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
+            colors = CardDefaults.cardColors(
+                containerColor = teaGreen
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -249,7 +260,9 @@ fun JournalPage(
                 .fillMaxWidth()
                 .padding(horizontal = 40.dp, vertical = 10.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primary)
+            colors = CardDefaults.cardColors(
+                containerColor = teaGreen
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

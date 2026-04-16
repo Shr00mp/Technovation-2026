@@ -44,7 +44,7 @@ fun TechnovationApp(
             TopNavigationBar(
                 currentDestination = currentDestination,
                 canNavigateBack = canNavigateBack,
-                navigateBack = { navController.popBackStack() }
+                navigateBack = { navController.popBackStack()}
             )
         },
     ) { innerPadding ->

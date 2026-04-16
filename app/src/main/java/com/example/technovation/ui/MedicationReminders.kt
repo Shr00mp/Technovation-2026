@@ -3,7 +3,6 @@ package com.example.technovation.ui
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlarmManager
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -14,16 +13,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -31,35 +21,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,7 +38,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.technovation.R
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -231,22 +198,20 @@ fun MedicationTaskCard(
             currTime.plusMinutes(15).isAfter(currMedication.time) &&
             !isCompleted
 
-
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(16.dp)
+            .padding(vertical = 8.dp, horizontal = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Image(
-                    painter = painterResource(id= R.drawable.pill_icon),
+                    painter = painterResource(id = R.drawable.pill_icon),
                     contentDescription = "Medication Icon",
                     modifier = Modifier.size(56.dp),
                     contentScale = ContentScale.Fit
@@ -258,53 +223,51 @@ fun MedicationTaskCard(
                     Text(
                         text = currMedication.name,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 25.sp
+                        fontSize = 24.sp
                     )
                     Text(
-                        text = "${currMedication.doseQuantity} ${currMedication.doseUnit} | ${currMedication.time.format(
-                            DateTimeFormatter.ofPattern("h:mm a"))}",
-                        fontSize = 18.sp
+                        text = "${currMedication.doseQuantity} ${currMedication.doseUnit} | ${currMedication.time.format(DateTimeFormatter.ofPattern("h:mm a"))}",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { onDoneClick() },
+                onClick = onDoneClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small,
                 enabled = !isCompleted,
-                colors =
-                    if (isCompleted) {
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    } else if (isOverdue) {
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        )
-                    } else if (isUpcoming) {
-                        ButtonDefaults.buttonColors(
-                            containerColor = androidx.compose.ui.graphics.Color.Yellow, // Note to self: Yellow is slightly too bright here, do custom
-                            contentColor = androidx.compose.ui.graphics.Color.Black
-                        )
-                    }
-                    else {
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
+                colors = if (isCompleted) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                } else if (isOverdue) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                } else if (isUpcoming) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = Color.Yellow, // Note to self: Yellow is slightly too bright here, do custom
+                        contentColor = Color.Black
+                    )
+                } else {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             ) {
                 Text(
-                    if (isCompleted) {"Done"}
-                    else if (isOverdue) {"Mark as done (Overdue)"}
-                    else if (isUpcoming) {"Mark as done (Upcoming)"}
-                    else { "Mark as Done (Not Upcoming)"},
-                    fontSize = 20.sp
+                    text = if (isCompleted) "Done"
+                    else if (isOverdue) "Mark as done (Overdue)"
+                    else if (isUpcoming) "Mark as done (Upcoming)"
+                    else "Mark as Done (Not Upcoming)",
+                    fontSize = 18.sp
                 )
             }
         }
@@ -317,98 +280,107 @@ fun MedicationPage(
     modifier: Modifier = Modifier,
     navController: NavController,
     viewModel: MedicationViewModel = viewModel(),
-    resourcesViewModel: ResourcesViewModel = viewModel())
-{
+    resourcesViewModel: ResourcesViewModel = viewModel()
+) {
     val scrollState = rememberScrollState()
     val remaining = viewModel.remainingTasks
     val completed = viewModel.completedTasks
+    val teaGreen = colorResource(id = R.color.tea_green)
 
     val allArticles by resourcesViewModel.articles.collectAsStateWithLifecycle()
-
-    val medicationArticle = allArticles.find { it.title.equals("Managing your medication", ignoreCase = true)}
+    val medicationArticle = allArticles.find { it.title.equals("Managing your medication", ignoreCase = true) }
 
     Scaffold(
         floatingActionButton = {
             Button(
-                onClick = { navController.navigate(AppPages.ManageMedications.title)},
+                onClick = { navController.navigate(AppPages.ManageMedications.title) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .height(60.dp),
-                shape = RoundedCornerShape(12.dp)
+                    .padding(horizontal = 24.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = teaGreen)
             ) {
-                Text("Manage Medications", fontSize = 20.sp)
+                Text("Manage Medications", fontSize = 18.sp, color = Color.Black, fontWeight = FontWeight.Bold)
             }
         },
         floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         Column(
-            modifier=modifier
+            modifier = modifier
                 .fillMaxSize()
-                .padding(16.dp)
                 .padding(paddingValues)
                 .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.Start
         ) {
             if (medicationArticle != null) {
-                ArticleCard(
-                    article = medicationArticle,
-                    onClick = { navController.navigate("detail/${medicationArticle.contentId}") },
-                    onBookmarkClick = { resourcesViewModel.toggleSaved(medicationArticle) }
+                Text(
+                    text = "Important information:",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.absolutePadding(18.dp, 0.dp, 18.dp, 18.dp)
                 )
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    ArticleCard(
+                        article = medicationArticle,
+                        onClick = { navController.navigate("detail/${medicationArticle.contentId}") },
+                        onBookmarkClick = { resourcesViewModel.toggleSaved(medicationArticle) }
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "Your Medication Reminders",
-                fontSize = 30.sp,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-            )
-            Spacer(modifier = Modifier.height(35.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Text(
-                "Tasks left for today",
-                fontSize = 25.sp,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(20.dp, top=15.dp)
+                text = "Your Medication Reminders",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
-            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Tasks left for today:",
+                fontSize = 23.sp,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(16.dp)
+            )
+
             if (remaining.isEmpty()) {
-                Text("You have no more medication tasks for today!", modifier = Modifier.padding(8.dp))
+                Text(
+                    "You have no more medication tasks for today!",
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             } else {
                 remaining.forEach { medication ->
                     MedicationTaskCard(
                         currMedication = medication,
                         isCompleted = false,
-                        onDoneClick = {viewModel.markAsDone(medication)})
-                    Spacer(modifier = Modifier.height(20.dp))
+                        onDoneClick = { viewModel.markAsDone(medication) }
+                    )
                 }
             }
 
-            if (!completed.isEmpty()) {
+            if (completed.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    "Already Completed Tasks Today",
-                    fontSize = 25.sp,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(0.dp, 15.dp)
+                    text = "Already Completed Today:",
+                    fontSize = 23.sp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 completed.forEach { medication ->
                     MedicationTaskCard(
                         currMedication = medication,
                         isCompleted = true,
-                        onDoneClick = {})
-                    Spacer(modifier = Modifier.height(20.dp))
+                        onDoneClick = {}
+                    )
                 }
             }
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -420,53 +392,41 @@ fun ManageMedicationCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
+            .padding(vertical = 4.dp, horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = R.drawable.pill_icon),
                 contentDescription = null,
-                modifier = Modifier.size(50.dp)
+                modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = medication.name, fontWeight = FontWeight.Bold, fontSize = 25.sp)
-                Text(text = "${medication.doseQuantity} ${medication.doseUnit} | " +
-                        "${medication.time.format(DateTimeFormatter.ofPattern("h:mm a"))} "
-                    , fontSize=18.sp)
+                Text(text = medication.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text(text = "${medication.doseQuantity} ${medication.doseUnit} | ${medication.time.format(DateTimeFormatter.ofPattern("h:mm a"))}")
             }
 
             Column(horizontalAlignment = Alignment.End) {
-                TextButton(onClick = onDelete) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text("Delete", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
-                    }
+                TextButton(onClick = onDelete, contentPadding = PaddingValues(4.dp)) {
+                    Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
-                TextButton(onClick = onEdit) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text("Edit", fontSize = 18.sp)
-                    }
+                TextButton(onClick = onEdit, contentPadding = PaddingValues(4.dp)) {
+                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Edit")
                 }
             }
         }
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -479,34 +439,29 @@ fun ManageMedicationPage(
     val medsToShow = viewModel.filteredMedications
 
     Column(
-        modifier=modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(scrollState)
     ) {
         Text(
-            "Manage your Medication Reminders",
-            fontSize = 30.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+            "Manage Reminders",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(35.dp))
-
         Button(
-            onClick = {
-                navController.navigate(AppPages.AddMedications.createRouteForAddingMedication(id=-1))
-            },
+            onClick = { navController.navigate(AppPages.AddMedications.createRouteForAddingMedication(id = -1)) },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Add New Medication Reminder", fontSize=20.sp)
+            Text("Add New Medication Reminder", fontSize = 18.sp)
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Search bar
         OutlinedTextField(
@@ -523,15 +478,13 @@ fun ManageMedicationPage(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (medsToShow.isEmpty()) {
-            Text("No medications found.", modifier = Modifier.padding(top = 20.dp))
+            Text("No medications found.", modifier = Modifier.padding(top = 20.dp).align(Alignment.CenterHorizontally))
         } else {
             medsToShow.forEach { medication ->
                 ManageMedicationCard(
                     medication = medication,
                     onDelete = { viewModel.deleteMedication(medication) },
-                    onEdit = {
-                        navController.navigate(AppPages.AddMedications.createRouteForAddingMedication(id=medication.id))
-                    }
+                    onEdit = { navController.navigate(AppPages.AddMedications.createRouteForAddingMedication(id = medication.id)) }
                 )
             }
         }
@@ -548,35 +501,31 @@ fun AddMedicationPage(
     viewModel: MedicationViewModel = viewModel(),
     medicationId: Int = -1, // Is -1 to add and is actual medication id for edit
 ) {
-    Column(
-        modifier=modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // When page starts we need to reload the medication for editing / adding
-        LaunchedEffect(medicationId) {
-            viewModel.loadMedicationForEdit(medicationId)
-        }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scrollState = rememberScrollState()
 
+    LaunchedEffect(medicationId) {
+        // When page starts we need to reload the medication for editing / adding
+        viewModel.loadMedicationForEdit(medicationId)
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(scrollState)
+    ) {
         Text(
             text = if (medicationId == -1) "Add Medication" else "Edit Medication",
-            fontSize = 30.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(55.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Name field
-        Text(
-            text = "Enter the medication name",
-            fontSize = 20.sp,
-            modifier = Modifier
-                .align(Alignment.Start)
-        )
-        Spacer(modifier = Modifier.height(5.dp))
+        Text("Enter the medication name", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = viewModel.nameEntry,
             onValueChange = { viewModel.nameEntry = it },
@@ -584,63 +533,40 @@ fun AddMedicationPage(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Dosage stepper
-        Text(
-            text = "Enter dosage amount",
-            fontSize = 20.sp,
-            modifier = Modifier
-                .align(Alignment.Start)
-        )
-        Spacer(modifier = Modifier.height(5.dp))
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FilledIconButton(
-                    onClick = { if (viewModel.doseEntry > 1) viewModel.doseEntry-- },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier.size(40.dp),
-                    shape = RoundedCornerShape(5.dp)
-                ) {
-                    Text("-", fontSize = 30.sp)
-                }
+        Text("Enter dosage amount", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FilledIconButton(
+                onClick = { if (viewModel.doseEntry > 1) viewModel.doseEntry-- },
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) { Text("-", fontSize = 24.sp) }
 
-                Text(
-                    text = viewModel.doseEntry.toString(),
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    fontSize = 23.sp
-                )
+            Text(
+                text = viewModel.doseEntry.toString(),
+                modifier = Modifier.padding(horizontal = 24.dp),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-                FilledIconButton(
-                    onClick = { viewModel.doseEntry++ },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier.size(40.dp),
-                    shape = RoundedCornerShape(5.dp)
-                ) {
-                    Text("+", fontSize = 28.sp)
-                }
-            }
+            FilledIconButton(
+                onClick = { viewModel.doseEntry++ },
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) { Text("+", fontSize = 24.sp) }
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Select dose type
         val options = listOf("Pill", "Tablet", "Capsule", "Syrup", "Other")
         var expanded by remember { mutableStateOf(false) }
 
-        Text(
-            text = "Select the dosage type",
-            fontSize = 20.sp,
-            modifier = Modifier
-                .align(Alignment.Start)
-        )
-        Spacer(modifier = Modifier.height(5.dp))
+        Text("Select the dosage type", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
@@ -669,29 +595,11 @@ fun AddMedicationPage(
             }
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Time
-        val context = androidx.compose.ui.platform.LocalContext.current
-        Text(
-            text = "Select the medication time",
-            fontSize = 20.sp,
-            modifier = Modifier
-                .align(Alignment.Start)
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text="Currently selected time: ${
-                viewModel.timeEntry.format(
-                    DateTimeFormatter.ofPattern(
-                        "h:mm a"
-                    )
-                )
-            }",
-            fontSize = 17.sp,
-            modifier = Modifier
-        )
-        Spacer(modifier = Modifier.height(5.dp))
+        Text("Select the medication time", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
             onClick = {
                 val timePicker = android.app.TimePickerDialog(
@@ -703,9 +611,9 @@ fun AddMedicationPage(
                 )
                 timePicker.show()
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp)
+            modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
-            Text("Select New Time", fontSize=15.sp)
+            Text("Selected: ${viewModel.timeEntry.format(DateTimeFormatter.ofPattern("h:mm a"))}")
         }
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -722,10 +630,11 @@ fun AddMedicationPage(
                 navController.popBackStack()
             },
             modifier = Modifier
-                .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Save", fontSize=20.sp)
+            Text("Save Medication", fontSize = 18.sp)
         }
     }
 }
@@ -761,6 +670,7 @@ class NotificationReceiver : BroadcastReceiver() {
             .setContentTitle("Medication Reminder")
             .setContentText("It's time to take your $medName medication. Take $medAmount $medType.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
 
         // For showing the notification
         // The next line is to do with getting the notification service on the actual device

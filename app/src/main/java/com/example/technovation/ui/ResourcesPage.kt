@@ -56,8 +56,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,6 +74,7 @@ import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.room3.TypeConverter
 import androidx.room3.TypeConverters
+import com.example.technovation.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -158,7 +161,7 @@ abstract class ResourcesDatabase : RoomDatabase() {
                     "Resources_Database"
                     //building the database in Room from the predefined database in db browser
                 ).createFromAsset("Resources_Database.db")
-                    .fallbackToDestructiveMigration()
+                    //.fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }
@@ -308,7 +311,7 @@ fun ResourcesPage(
                     onSearch = { expanded = false },
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    placeholder = { Text("Search articles") },
+                    placeholder = { Text("Search articles", fontSize = 16.sp) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     },
@@ -338,6 +341,8 @@ fun ResourcesPage(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Column(
             modifier = Modifier
@@ -373,7 +378,8 @@ fun ResourcesPage(
                 Text(
                     text = "Results (${filteredContent.size})",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 22.sp
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 filteredContent.forEach { article ->
@@ -409,6 +415,7 @@ fun ResourcesPage(
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = "Saved articles",
+                                fontSize = 20.sp,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -447,9 +454,10 @@ fun ResourcesPage(
                     Text(
                         text = "Recommended for you",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 22.sp
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(15.dp))
                     recommended.forEach { article ->
                         ArticleCard(
                             article = article,
@@ -461,11 +469,12 @@ fun ResourcesPage(
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "Articles",
+                    text = "All articles",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 22.sp
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(15.dp))
                 articles.forEach { article ->
                     ArticleCard(
                         article = article,
@@ -496,7 +505,7 @@ fun ArticleCard(
             .fillMaxWidth()
             .padding(bottom = 8.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
         Column {
             // Cover image — only shown when the article has an imageRes set in the DB
@@ -523,7 +532,8 @@ fun ArticleCard(
                     Text(
                         text = article.title,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 21.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -531,7 +541,8 @@ fun ArticleCard(
                             .lowercase()
                             .replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp
                     )
                 }
                 IconButton(onClick = onBookmarkClick) {

@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.technovation.R
 import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -54,6 +56,7 @@ fun Home(
     val recommendedArticles by resourcesViewModel.recommended.collectAsStateWithLifecycle()
     val topArticle = recommendedArticles.firstOrNull()
     var showDialog by remember {mutableStateOf(false) }
+    val paleGreen = colorResource(id = R.color.pale_green)
     LaunchedEffect(Unit) {
         allEntriesViewModel.initialise(symptomsViewModel)
     }
@@ -103,7 +106,9 @@ fun Home(
             "Welcome back, ${loginSignupViewmodel.currentUserName}",
             fontSize = 30.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier=Modifier.height(20.dp))
@@ -112,10 +117,15 @@ fun Home(
             "Have you journalled today?",
             fontSize = 25.sp,
             modifier=Modifier.align(Alignment.Start)
-                .padding(20.dp, 15.dp)
+                .padding(20.dp, 15.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.secondary
         )
 
         Card(
+            colors = CardDefaults.cardColors(
+                containerColor = paleGreen
+            ),
             onClick = {
                 if (allEntriesViewModel.hasEntryForDay(LocalDate.now())) {
                     showDialog = true
@@ -149,11 +159,13 @@ fun Home(
         Spacer(modifier=Modifier.height(20.dp))
 
         Text(
-            "Here is your next medication",
+            "Here is your next medication:",
+            color = MaterialTheme.colorScheme.secondary,
             fontSize = 25.sp,
             modifier=Modifier
                 .align(Alignment.Start)
-                .padding(20.dp, 15.dp)
+                .padding(20.dp, 15.dp),
+            style = MaterialTheme.typography.bodyLarge
         )
 
         if (medicationsViewModel.remainingTasks.isEmpty()) {
@@ -162,6 +174,9 @@ fun Home(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 10.dp),
                 shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = paleGreen
+                )
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -180,11 +195,13 @@ fun Home(
         Spacer(modifier=Modifier.height(20.dp))
 
         Text(
-            "Your daily recommendation",
+            "Your daily recommendation:",
+            color = MaterialTheme.colorScheme.secondary,
             fontSize = 25.sp,
             modifier = Modifier
                 .align(Alignment.Start)
-                .padding(20.dp, 15.dp)
+                .padding(20.dp, 15.dp),
+            style = MaterialTheme.typography.bodyLarge
         )
 
         if (topArticle != null) {
