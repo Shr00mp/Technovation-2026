@@ -54,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -310,7 +311,7 @@ fun ResourcesPage(
     val isSearchOrFilterActive = searchQuery.isNotBlank() ||
             filterState.selectedCategories.isNotEmpty()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom=50.dp)) {
         SearchBar(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             inputField = {
@@ -405,7 +406,7 @@ fun ResourcesPage(
                         .clickable { showSaved = !showSaved },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        containerColor = Color(0xffDCE1DE)
                     )
                 ) {
                     Row(
@@ -427,7 +428,6 @@ fun ResourcesPage(
                                 fontSize = 20.sp,
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
                         Text(
@@ -492,6 +492,7 @@ fun ResourcesPage(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
@@ -514,7 +515,8 @@ fun ArticleCard(
             .fillMaxWidth()
             .padding(bottom = 8.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(Color(0xffDCE1DE))
     ) {
         Column {
             // Cover image — only shown when the article has an imageRes set in the DB
@@ -550,7 +552,7 @@ fun ArticleCard(
                             .lowercase()
                             .replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = Color(0xff216869),
                         fontSize = 14.sp
                     )
                 }
@@ -559,7 +561,7 @@ fun ArticleCard(
                         imageVector = if (article.saved) Icons.Default.Favorite
                         else Icons.Default.FavoriteBorder,
                         contentDescription = if (article.saved) "Unsave" else "Save",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = if (article.saved) Color(0xFFBC4B51) else Color(0xFF216869),
                         modifier = Modifier.size(24.dp)
                     )
                 }

@@ -17,7 +17,6 @@ import com.example.technovation.ui.JournalPage
 import com.example.technovation.ui.NewJournalEntry
 import com.example.technovation.ui.PastEntries
 import com.example.technovation.ui.TechnovationApp
-import com.example.technovation.ui.WelcomePage
 import com.example.technovation.ui.theme.TechnovationTheme
 
 class MainActivity : ComponentActivity() {

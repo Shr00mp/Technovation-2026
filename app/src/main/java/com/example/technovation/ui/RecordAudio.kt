@@ -31,6 +31,7 @@ import android.Manifest
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.CalendarContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absolutePadding
@@ -42,6 +43,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -49,6 +51,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -75,7 +78,7 @@ fun AudioPage(
     modifier: Modifier = Modifier,
     navController: NavController
 ) {
-    val teaGreen = colorResource(id = R.color.tea_green)
+    val teaGreen = Color(0xff9CC5A1)
     Column(
         modifier=modifier
             .fillMaxSize()
@@ -329,7 +332,10 @@ fun MakeRecording(
             },
             modifier = Modifier
                 .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(Color(0xff216869))
         ) {
             Text(if (isRecording){"Stop Recording"} else if (hasFinishedRecording) {"Record Again"} else {"Start Recording"}, fontSize=20.sp)
         }
@@ -372,7 +378,9 @@ fun MakeRecording(
                         }
                     }
                 },
-                modifier = Modifier.height(60.dp).width(350.dp)
+                modifier = Modifier.height(60.dp).fillMaxWidth().padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(Color(0xff216869))
             ) {
                 Text(if (isLoadingResults) "Processing..." else "Get Results", fontSize = 20.sp)
             }
@@ -387,15 +395,18 @@ fun MakeRecording(
                     Button(onClick = {
                         allResultsViewmodel.saveResult(analysisData!!)
                         showDialog = false
-                    }) {
-                        Text("Save Result")
+                    },
+                        colors = ButtonDefaults.buttonColors(Color(0xff216869)),
+                        shape = RoundedCornerShape(12.dp)) {
+                        Text("Save Result", fontSize = 18.sp)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDialog = false }) {
-                        Text("Close")
+                        Text("Close", color=Color(0xff216869), fontSize = 18.sp)
                     }
-                }
+                },
+                containerColor = Color(0xffDCE1DE)
             )
         }
     }
@@ -410,7 +421,6 @@ fun ResultView(result: AnalysisResult) {
             .padding(16.dp)
     ) {
         Text("Severity: ${(result.severityScore * 100).toInt()}%", fontSize = 20.sp)
-        Text("Accuracy: ${(result.accuracy * 100).toInt()}%", fontSize = 20.sp)
 
         Spacer(modifier = Modifier.height(25.dp))
         val para = arrayListOf<String>()
@@ -450,7 +460,8 @@ fun ResultsViewCard(result: AnalysisResult) {
             .fillMaxWidth()
             .absolutePadding(10.dp, 0.dp, 10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(Color(0xffDCE1DE))
     ) {
         Text(
             "$formattedDate",

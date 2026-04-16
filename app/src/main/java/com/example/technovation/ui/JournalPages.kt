@@ -34,16 +34,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -98,7 +104,7 @@ fun JournalPage(
     var showAddQuestoinDialogue by remember {mutableStateOf(false)}
     LaunchedEffect(Unit) {
         allEntriesViewModel.initialise(symptomsViewModel) }
-    val teaGreen = colorResource(id = R.color.tea_green)
+    val teaGreen = Color(0xff9CC5A1)
 
     if (showDialog) {
         AlreadyMadeEntryDialogue(
@@ -307,6 +313,7 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
                 .height(660.dp)
                 .padding(20.dp),
             shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
         ) {
             Column(
                 modifier = Modifier
@@ -348,7 +355,8 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
                     label = { Text("Question") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(Color(0xff216869))
                 )
 
                 Spacer(modifier=Modifier.height(30.dp))
@@ -369,7 +377,8 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
                 ) {
                     Checkbox(
                         checked = isYesOrNo,
-                        onCheckedChange = { isYesOrNo=true; isTextBox=false }
+                        onCheckedChange = { isYesOrNo=true; isTextBox=false },
+                        colors = CheckboxDefaults.colors(Color(0xff216869))
                     )
                     Text(
                         text = "Yes or No question",
@@ -384,7 +393,8 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
                 ) {
                     Checkbox(
                         checked = isTextBox,
-                        onCheckedChange = { isTextBox = true; isYesOrNo=false}
+                        onCheckedChange = { isTextBox = true; isYesOrNo=false},
+                        colors = CheckboxDefaults.colors(Color(0xff216869))
                     )
                     Text(
                         text = "Open-ended question",
@@ -401,13 +411,13 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
                         onClick = { onDismissRequest() },
                         modifier = Modifier.padding(8.dp),
                     ) {
-                        Text("Dismiss", fontSize = 20.sp)
+                        Text("Dismiss", fontSize = 20.sp, color = Color(0xff216869))
                     }
                     TextButton(
                         onClick = { onConfirm(question, isYesOrNo, isTextBox) },
                         modifier = Modifier.padding(8.dp),
                     ) {
-                        Text("Confirm", fontSize = 20.sp)
+                        Text("Confirm", fontSize = 20.sp, color = Color(0xff216869))
                     }
                 }
                 Spacer(modifier=Modifier.height(20.dp))
@@ -624,7 +634,8 @@ fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
 
         Checkbox(
             checked = symptom.selected,
-            onCheckedChange = { toggleSymptom() }
+            onCheckedChange = { toggleSymptom() },
+            colors = CheckboxDefaults.colors(Color(0xff216869))
         )
 
         Text(
@@ -767,7 +778,8 @@ fun NewJournalEntry(
                 .fillMaxWidth()
                 .absolutePadding(10.dp, 0.dp, 10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -813,7 +825,8 @@ fun NewJournalEntry(
                     .fillMaxWidth()
                     .absolutePadding(10.dp, 0.dp, 10.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -839,7 +852,8 @@ fun NewJournalEntry(
                             ) {
                                 Checkbox(
                                     checked = symptomsViewModel.tempCustomAnswers[question.id] == "Yes",
-                                    onCheckedChange = { symptomsViewModel.tempCustomAnswers[question.id] = "Yes" }
+                                    onCheckedChange = { symptomsViewModel.tempCustomAnswers[question.id] = "Yes" },
+                                    colors = CheckboxDefaults.colors(Color(0xff216869))
                                 )
                                 Text(
                                     text = "Yes",
@@ -848,7 +862,8 @@ fun NewJournalEntry(
                                 Spacer(modifier = Modifier.width(20.dp))
                                 Checkbox(
                                     checked = symptomsViewModel.tempCustomAnswers[question.id] == "No",
-                                    onCheckedChange = { symptomsViewModel.tempCustomAnswers[question.id] = "No" }
+                                    onCheckedChange = { symptomsViewModel.tempCustomAnswers[question.id] = "No" },
+                                    colors = CheckboxDefaults.colors(Color(0xff216869))
                                 )
                                 Text(
                                     text = "No",
@@ -881,7 +896,8 @@ fun NewJournalEntry(
                 .fillMaxWidth()
                 .absolutePadding(10.dp, 0.dp, 10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -914,6 +930,8 @@ fun NewJournalEntry(
                     modifier = Modifier
                         .height(50.dp)
                         .width(350.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xff49A078)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Add new physical symptom", fontSize=20.sp)
                 }
@@ -928,7 +946,8 @@ fun NewJournalEntry(
                 .fillMaxWidth()
                 .absolutePadding(10.dp, 0.dp, 10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -959,6 +978,8 @@ fun NewJournalEntry(
                     modifier = Modifier
                         .height(50.dp)
                         .width(350.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xff49A078)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Add new mental symptom", fontSize=20.sp)
                 }
@@ -973,7 +994,8 @@ fun NewJournalEntry(
                 .fillMaxWidth()
                 .absolutePadding(10.dp, 0.dp, 10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1004,6 +1026,8 @@ fun NewJournalEntry(
                     modifier = Modifier
                         .height(50.dp)
                         .width(350.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xff49A078)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Add new activity", fontSize=20.sp)
                 }
@@ -1017,30 +1041,58 @@ fun NewJournalEntry(
             .fillMaxWidth()
             .absolutePadding(10.dp, 0.dp, 10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(16.dp)){
-            TextField(
-                value=symptomsViewModel.tempText,
-                onValueChange = { symptomsViewModel.tempText = it },
-                label = { Text("Write about how your day went") },
-                modifier = Modifier.padding(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Gray,
-                    unfocusedContainerColor = Color.Green
-                )
-            )
-            Text(
-                text = "Press the button below for voice to text",
-                modifier = Modifier.padding(16.dp)
-            )
-            Button(
-                onClick = { voiceInput() },
-                modifier = Modifier.padding(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE)))
+        {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 30.dp)
             ) {
-                Icon(
-                    //For now as there is no mic icon
-                    imageVector = Icons.Default.Phone,
-                    contentDescription = "Phone"
+                Text(
+                    "Extra notes",
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
                 )
+                Text(
+                    "Is there anything else you want to mention?",
+                    fontSize = 20.sp,
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = symptomsViewModel.tempText,
+                    onValueChange = { symptomsViewModel.tempText = it },
+                    label = { Text("Write about how your day went") },
+                    modifier = Modifier.padding(16.dp).fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.padding(start=20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    FilledIconButton(
+                        onClick = { voiceInput() },
+                        modifier = Modifier.size(48.dp),
+                        colors = IconButtonDefaults.iconButtonColors(Color(0xff49A078))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Voice Input",
+                            tint=Color.White
+                        )
+                    }
+                    Spacer(modifier=Modifier.width(10.dp))
+                    Text(
+                        text = "Use speech to text by clicking this button",
+                        fontSize = 15.sp,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                }
             }
         }
 
@@ -1065,7 +1117,9 @@ fun NewJournalEntry(
             },
             modifier = Modifier
                 .height(60.dp)
-                .width(350.dp),
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xff216869))
         ) {
             Text("Finish entry", fontSize=20.sp)
         }
@@ -1234,7 +1288,8 @@ fun PastEntryCard(
             .fillMaxWidth()
             .absolutePadding(10.dp, 0.dp, 10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
     ) {
         Column(
             modifier= Modifier
@@ -1264,9 +1319,10 @@ fun PastEntryCard(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            modifier = Modifier.size(25.dp)
+                            modifier = Modifier.size(25.dp),
+                            tint = Color(0xff216869)
                         )
-                        Text("Edit", fontSize = 20.sp)
+                        Text("Edit", fontSize = 20.sp, color = Color(0xff216869))
                     }
                 }
             }
@@ -1541,7 +1597,8 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
             .fillMaxWidth()
             .padding(10.dp),
         elevation = CardDefaults.cardElevation(5.dp),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -1734,7 +1791,8 @@ fun StatisticsPage(
                 .fillMaxWidth()
                 .absolutePadding(10.dp, 0.dp, 10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
         ) {
             Spacer(modifier=Modifier.height(15.dp))
             Text(
@@ -1776,7 +1834,8 @@ fun StatisticsPage(
                     .fillMaxWidth()
                     .absolutePadding(10.dp, 0.dp, 10.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xffDCE1DE))
             ) {
                 Spacer(modifier = Modifier.height(15.dp))
                 Text(
@@ -1791,7 +1850,7 @@ fun StatisticsPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp, horizontal = 20.dp),
-                        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.inverseOnSurface)
+                        colors = CardDefaults.cardColors(Color(0xff9CC5A1))
                     ) {
                         Text(text, modifier = Modifier.padding(16.dp))
                     }

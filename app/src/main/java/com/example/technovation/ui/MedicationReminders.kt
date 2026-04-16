@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationCompat
@@ -82,9 +83,9 @@ class MedicationViewModel : ViewModel() {
     init {
         // Manually assigning IDs for the prototype
         allMedication.addAll(listOf(
-            Medication(id = 1, name = "Lisinopril", doseQuantity = 1, doseUnit = "Pill", time = LocalTime.of(8, 0)),
-            Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.of(12, 0)),
-            Medication(id = 3, name = "Metformin", doseQuantity = 1, doseUnit = "Tablet", time = LocalTime.of(18, 0))
+            Medication(id = 1, name = "Lisinopril", doseQuantity = 1, doseUnit = "Pill", time = LocalTime.now().minusHours(1)),
+            Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.now().plusMinutes(15)),
+            Medication(id = 3, name = "Metformin", doseQuantity = 1, doseUnit = "Tablet", time = LocalTime.now().plusHours(1)),
         ))
     }
 
@@ -198,12 +199,18 @@ fun MedicationTaskCard(
             currTime.plusMinutes(15).isAfter(currMedication.time) &&
             !isCompleted
 
+    val cardBG = Color(0xFFDCE1DE)
+    val dueSoon = Color(0xfff4e285)
+    val overdue = Color(0xffbc4b51)
+    val notDue = Color(0xff8cb369)
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp, horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(cardBG)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -242,22 +249,22 @@ fun MedicationTaskCard(
                 enabled = !isCompleted,
                 colors = if (isCompleted) {
                     ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        containerColor = notDue,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 } else if (isOverdue) {
                     ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
+                        containerColor = overdue,
                         contentColor = MaterialTheme.colorScheme.onError
                     )
                 } else if (isUpcoming) {
                     ButtonDefaults.buttonColors(
-                        containerColor = Color.Yellow, // Note to self: Yellow is slightly too bright here, do custom
+                        containerColor = dueSoon,
                         contentColor = Color.Black
                     )
                 } else {
                     ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = notDue,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 }
@@ -299,9 +306,9 @@ fun MedicationPage(
                     .padding(horizontal = 24.dp)
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = teaGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xff216869))
             ) {
-                Text("Manage Medications", fontSize = 18.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                Text("Manage Medications", fontSize = 20.sp, color = Color.White)
             }
         },
         floatingActionButtonPosition = FabPosition.Center
@@ -393,7 +400,8 @@ fun ManageMedicationCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp, horizontal = 16.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(Color(0xffDCE1DE))
     ) {
         Row(
             modifier = Modifier
@@ -419,9 +427,15 @@ fun ManageMedicationCard(
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
                 TextButton(onClick = onEdit, contentPadding = PaddingValues(4.dp)) {
-                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
+
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        modifier = Modifier.size(25.dp),
+                        tint = Color(0xff216869)
+                    )
                     Spacer(Modifier.width(4.dp))
-                    Text("Edit")
+                    Text("Edit", color = Color(0xff216869))
                 }
             }
         }
@@ -456,7 +470,8 @@ fun ManageMedicationPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(Color(0xff216869))
         ) {
             Text("Add New Medication Reminder", fontSize = 18.sp)
         }
@@ -542,8 +557,9 @@ fun AddMedicationPage(
             FilledIconButton(
                 onClick = { if (viewModel.doseEntry > 1) viewModel.doseEntry-- },
                 modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) { Text("-", fontSize = 24.sp) }
+                shape = RoundedCornerShape(8.dp),
+                colors = IconButtonDefaults.iconButtonColors(Color(0xff49A078))
+            ) { Text("-", fontSize = 30.sp, color=Color.White) }
 
             Text(
                 text = viewModel.doseEntry.toString(),
@@ -555,8 +571,9 @@ fun AddMedicationPage(
             FilledIconButton(
                 onClick = { viewModel.doseEntry++ },
                 modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) { Text("+", fontSize = 24.sp) }
+                shape = RoundedCornerShape(8.dp),
+                colors = IconButtonDefaults.iconButtonColors(Color(0xff49A078))
+            ) { Text("+", fontSize = 24.sp, color=Color.White) }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -632,7 +649,8 @@ fun AddMedicationPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(Color(0xff216869))
         ) {
             Text("Save Medication", fontSize = 18.sp)
         }
