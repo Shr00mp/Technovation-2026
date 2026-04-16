@@ -310,6 +310,7 @@ fun MedicationPage(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(16.dp)
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.Start
         ) {
