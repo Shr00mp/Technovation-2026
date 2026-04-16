@@ -27,6 +27,7 @@ fun TechnovationApp(
     val resourcesViewModel: ResourcesViewModel = viewModel()
     val allMedicationsViewModel: MedicationViewModel = viewModel()
     val symptomsViewModel: SymptomsViewModel = viewModel()
+    val loginSignupViewmodel: LoginSignupViewmodel = viewModel()
     val canNavigateBack = navController.previousBackStackEntry != null
 
     Scaffold(
@@ -40,7 +41,6 @@ fun TechnovationApp(
             )
         },
         topBar = {
-            // Add the Top Bar here!
             TopNavigationBar(
                 currentDestination = currentDestination,
                 canNavigateBack = canNavigateBack,
@@ -50,15 +50,21 @@ fun TechnovationApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppPages.HomePage.title,
+            startDestination = AppPages.LoginPage.title,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(route = AppPages.LoginPage.title) {
+                LoginPage(navController = navController,
+                    modifier = modifier,
+                    viewModel = loginSignupViewmodel)
+            }
             composable(route = AppPages.HomePage.title) {
                 Home(navController = navController,
                     modifier = modifier,
                     allEntriesViewModel = allJournalEntries,
                     medicationsViewModel = allMedicationsViewModel,
-                    resourcesViewModel = resourcesViewModel)
+                    resourcesViewModel = resourcesViewModel,
+                    loginSignupViewmodel = loginSignupViewmodel)
             }
             composable(route = AppPages.ResourcesPage.title){
                 ResourcesPage(navController = navController,
