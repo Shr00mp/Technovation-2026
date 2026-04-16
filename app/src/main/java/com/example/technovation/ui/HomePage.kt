@@ -113,7 +113,8 @@ fun Home(
             fontSize = 25.sp,
             modifier=Modifier.align(Alignment.Start)
                 .padding(20.dp, 15.dp),
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.secondary
         )
 
         Card(
@@ -154,6 +155,7 @@ fun Home(
 
         Text(
             "Here is your next medication:",
+            color = MaterialTheme.colorScheme.secondary,
             fontSize = 25.sp,
             modifier=Modifier
                 .align(Alignment.Start)
@@ -189,6 +191,7 @@ fun Home(
 
         Text(
             "Your daily recommendation:",
+            color = MaterialTheme.colorScheme.secondary,
             fontSize = 25.sp,
             modifier = Modifier
                 .align(Alignment.Start)
