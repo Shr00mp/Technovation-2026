@@ -94,9 +94,9 @@ fun JournalPage(
     symptomsViewModel: SymptomsViewModel = viewModel()) {
     var showDialog by remember {mutableStateOf(false)}
     var showAddQuestoinDialogue by remember {mutableStateOf(false)}
-    LaunchedEffect(Unit) {
-        allEntriesViewModel.initialise(symptomsViewModel)
-    }
+//    LaunchedEffect(Unit) {
+//        allEntriesViewModel.initialise(symptomsViewModel)
+//    }
 
     if (showDialog) {
         AlreadyMadeEntryDialogue(
