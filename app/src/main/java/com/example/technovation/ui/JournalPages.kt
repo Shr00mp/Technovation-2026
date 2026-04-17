@@ -1054,7 +1054,7 @@ fun NewJournalEntry(
 
         Spacer(modifier=Modifier.height(30.dp))
 
-        //The layout of this is ugly for now but it works
+        // Adding extra notes with a speech to text feature
         Card(modifier = Modifier
             .fillMaxWidth()
             .absolutePadding(10.dp, 0.dp, 10.dp),

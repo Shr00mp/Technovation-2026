@@ -84,7 +84,7 @@ class MedicationViewModel : ViewModel() {
         // Manually assigning IDs for the prototype
         allMedication.addAll(listOf(
             Medication(id = 1, name = "Lisinopril", doseQuantity = 1, doseUnit = "Pill", time = LocalTime.now().minusHours(1)),
-            Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.now().plusMinutes(15)),
+            Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.now().plusMinutes(7)),
             Medication(id = 3, name = "Metformin", doseQuantity = 1, doseUnit = "Tablet", time = LocalTime.now().plusHours(1)),
         ))
     }
@@ -168,7 +168,7 @@ class MedicationViewModel : ViewModel() {
             set(Calendar.HOUR_OF_DAY, medication.time.hour)
             set(Calendar.MINUTE, medication.time.minute)
             set(Calendar.SECOND, 0)
-            add(Calendar.MINUTE,-1)
+            add(Calendar.MINUTE,-5) // Changed to get notif 5 mins before set to receive
         }
 
         // If the time for the alarm today has already passed, then set notification for tomorrow
@@ -199,6 +199,7 @@ fun MedicationTaskCard(
             currTime.plusMinutes(15).isAfter(currMedication.time) &&
             !isCompleted
 
+    // Colour coded the different states for more intuitive look
     val cardBG = Color(0xFFDCE1DE)
     val dueSoon = Color(0xfff4e285)
     val overdue = Color(0xffbc4b51)

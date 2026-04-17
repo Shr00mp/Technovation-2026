@@ -113,6 +113,7 @@ fun AudioPage(
 
         Spacer(modifier = Modifier.height(40.dp))
 
+        // take new audio test card
         Card(
             onClick = {
                 navController.navigate(route = AppPages.MakeRecording.title)
@@ -143,6 +144,7 @@ fun AudioPage(
 
         Spacer(modifier=Modifier.height(20.dp))
 
+        // view past analysis card
         Card(
             onClick = {
                 navController.navigate(route = AppPages.PastRecordings.title)
@@ -192,7 +194,6 @@ fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
 
     val file = File(filePath)
 
-    // The key "file" must match the parameter name in your FastAPI function: save_audio(file: UploadFile)
     val requestBody = MultipartBody.Builder()
         .setType(MultipartBody.FORM)
         .addFormDataPart(
@@ -209,7 +210,7 @@ fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
 
     client.newCall(request).enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
-            e.printStackTrace() // Handle connection errors here
+            e.printStackTrace() // connection errors handled
         }
 
         override fun onResponse(call: Call, response: Response) {
@@ -218,7 +219,7 @@ fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
                 // Need to convert the json response to AnalysisResult object
                 val result = Gson().fromJson(jsonString, AnalysisResult::class.java)
 
-                onResult(result) // Send the result back!
+                onResult(result)
             } else {
                 onResult(null)
             }
@@ -278,6 +279,7 @@ fun MakeRecording(
                 .padding(horizontal = 20.dp)
         )
         Spacer(modifier=Modifier.height(5.dp))
+        // One long sound like this is good for analysing severity
         Text(
             "Say 'aaaaa' steadily for around 3 seconds.",
             fontSize = 20.sp,
@@ -394,7 +396,7 @@ fun MakeRecording(
                 Text(if (isLoadingResults) "Processing..." else "Get Results", fontSize = 20.sp)
             }
         }
-        // DIALOG POPUP
+
         if (showDialog && analysisData != null) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
@@ -461,6 +463,7 @@ fun ResultView(result: AnalysisResult) {
 fun ResultsViewCard(result: AnalysisResult) {
     val timestamp = result.date.toLongOrNull() ?: System.currentTimeMillis()
     val dateObject = Date(timestamp)
+    // Added the hour and minute just in case user takes multiple recordings in a day
     val formatter = SimpleDateFormat("hh:mm a EEEE d MMMM yyyy", Locale.getDefault())
     val formattedDate = formatter.format(dateObject)
 

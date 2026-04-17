@@ -104,17 +104,8 @@ fun Home(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-//        Text(
-//            "Welcome back, ${loginSignupViewmodel.currentUserName}",
-//            fontSize = 30.sp,
-//            modifier=Modifier
-//                .align(Alignment.CenterHorizontally),
-//            style = MaterialTheme.typography.titleMedium,
-//            fontWeight = FontWeight.SemiBold
-//        )
-
         Text(
-            "Welcome back, Sharon",
+            "Welcome back, ${loginSignupViewmodel.currentUserName}",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally),

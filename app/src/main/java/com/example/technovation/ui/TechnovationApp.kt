@@ -31,6 +31,7 @@ fun TechnovationApp(
     val canNavigateBack = navController.previousBackStackEntry != null
 
     Scaffold(
+        // For both if statements below, don't show any top or bottom bars on login page
         bottomBar = {
             if (currentDestination?.route != AppPages.LoginPage.title) {
                 BottomNavigationBar(
@@ -43,7 +44,7 @@ fun TechnovationApp(
             }
         },
         topBar = {
-            if (currentDestination?.route != AppPages.HomePage.title) {
+            if (currentDestination?.route != AppPages.LoginPage.title) {
                 TopNavigationBar(
                     currentDestination = currentDestination,
                     canNavigateBack = canNavigateBack,
@@ -54,7 +55,7 @@ fun TechnovationApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppPages.LoginPage.title,
+            startDestination = AppPages.HomePage.title,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(route = AppPages.LoginPage.title) {
