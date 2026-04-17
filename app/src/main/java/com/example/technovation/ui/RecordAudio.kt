@@ -42,6 +42,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.SettingsVoice
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -123,6 +128,8 @@ fun AudioPage(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().padding(25.dp)
             ) {
+                Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.width(15.dp))
                 Text("Take a new audio test", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
                 Spacer(modifier=Modifier.width(35.dp))
@@ -150,6 +157,8 @@ fun AudioPage(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().padding(25.dp)
             ) {
+                Icon(Icons.Default.LibraryBooks, contentDescription = null, modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.width(15.dp))
                 Text("See past test records", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
                 Spacer(modifier=Modifier.width(35.dp))

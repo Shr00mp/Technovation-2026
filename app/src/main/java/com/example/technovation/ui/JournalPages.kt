@@ -32,10 +32,15 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.QuestionAnswer
+import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -182,6 +187,8 @@ fun JournalPage(
                     .fillMaxWidth()
                     .padding(25.dp)
             ) {
+                Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.width(15.dp))
                 Text("Make a new journal entry", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
                 Spacer(modifier=Modifier.width(35.dp))
@@ -213,6 +220,8 @@ fun JournalPage(
                     .fillMaxWidth()
                     .padding(25.dp)
             ) {
+                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.width(15.dp))
                 Text("See your past entries", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
                 Spacer(modifier=Modifier.width(35.dp))
@@ -245,6 +254,8 @@ fun JournalPage(
                     .fillMaxWidth()
                     .padding(25.dp)
             ) {
+                Icon(Icons.Default.BarChart, contentDescription = null, modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.width(15.dp))
                 Text("See your statistics", fontSize = 25.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
                 Spacer(modifier=Modifier.width(35.dp))
@@ -276,9 +287,11 @@ fun JournalPage(
                     .fillMaxWidth()
                     .padding(25.dp)
             ) {
-                Text("Add a specific question to your journal", fontSize = 22.sp, textAlign = TextAlign.Center,
+                Icon(Icons.Default.QuestionAnswer, contentDescription = null, modifier = Modifier.size(35.dp))
+                Spacer(modifier = Modifier.width(15.dp))
+                Text("Add specific question to journal", fontSize = 22.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
-                Spacer(modifier=Modifier.width(20.dp))
+                Spacer(modifier=Modifier.width(15.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Arrow",

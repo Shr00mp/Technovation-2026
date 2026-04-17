@@ -32,25 +32,29 @@ fun TechnovationApp(
 
     Scaffold(
         bottomBar = {
-            BottomNavigationBar(
-                currentDestination,
-                onTabClick = {
-                    navController.navigate(it.title)
-                },
-                modifier
-            )
+            if (currentDestination?.route != AppPages.LoginPage.title) {
+                BottomNavigationBar(
+                    currentDestination,
+                    onTabClick = {
+                        navController.navigate(it.title)
+                    },
+                    modifier
+                )
+            }
         },
         topBar = {
-            TopNavigationBar(
-                currentDestination = currentDestination,
-                canNavigateBack = canNavigateBack,
-                navigateBack = { navController.popBackStack()}
-            )
+            if (currentDestination?.route != AppPages.LoginPage.title) {
+                TopNavigationBar(
+                    currentDestination = currentDestination,
+                    canNavigateBack = canNavigateBack,
+                    navigateBack = { navController.popBackStack()}
+                )
+            }
         },
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppPages.LoginPage.title,
+            startDestination = AppPages.HomePage.title,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(route = AppPages.LoginPage.title) {
