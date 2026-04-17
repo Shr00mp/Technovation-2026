@@ -60,6 +60,7 @@ fun Home(
     val paleGreen = colorResource(id = R.color.pale_green)
     LaunchedEffect(Unit) {
         allEntriesViewModel.initialise(symptomsViewModel)
+        resourcesViewModel.refreshRecommendations(allEntriesViewModel)
     }
     if (showDialog) {
         AlreadyMadeEntryDialogue(
@@ -98,13 +99,22 @@ fun Home(
     Column(
         modifier=modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(start=16.dp, top=16.dp, end=16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+//        Text(
+//            "Welcome back, ${loginSignupViewmodel.currentUserName}",
+//            fontSize = 30.sp,
+//            modifier=Modifier
+//                .align(Alignment.CenterHorizontally),
+//            style = MaterialTheme.typography.titleMedium,
+//            fontWeight = FontWeight.SemiBold
+//        )
+
         Text(
-            "Welcome back, ${loginSignupViewmodel.currentUserName}",
+            "Welcome back, Sharon",
             fontSize = 30.sp,
             modifier=Modifier
                 .align(Alignment.CenterHorizontally),

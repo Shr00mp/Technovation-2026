@@ -43,7 +43,7 @@ fun TechnovationApp(
             }
         },
         topBar = {
-            if (currentDestination?.route != AppPages.LoginPage.title) {
+            if (currentDestination?.route != AppPages.HomePage.title) {
                 TopNavigationBar(
                     currentDestination = currentDestination,
                     canNavigateBack = canNavigateBack,
@@ -54,7 +54,7 @@ fun TechnovationApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppPages.HomePage.title,
+            startDestination = AppPages.LoginPage.title,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(route = AppPages.LoginPage.title) {
