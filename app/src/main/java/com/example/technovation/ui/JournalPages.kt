@@ -783,7 +783,9 @@ fun NewJournalEntry(
             "Make a New Entry",
             fontSize = 30.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier=Modifier.height(55.dp))
@@ -1480,7 +1482,9 @@ fun PastEntries(
             "All Past Entries",
             fontSize = 30.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier=Modifier.height(55.dp))
@@ -1803,7 +1807,9 @@ fun StatisticsPage(
             "Your Progress",
             fontSize = 30.sp,
             modifier=Modifier
-                .align(Alignment.CenterHorizontally)
+                .align(Alignment.CenterHorizontally),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier=Modifier.height(15.dp))
