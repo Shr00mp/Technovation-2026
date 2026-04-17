@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.speech.RecognizerIntent
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -690,9 +691,9 @@ fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int, onConfirm: (S
             }
         },
         text = {
-            TextField(
+            OutlinedTextField(
                 value = symptomName,
-                onValueChange = { symptomName = it },
+                onValueChange = { symptomName = it.capitalize() },
                 label = { Text("Name") },
                 singleLine = true
             )
@@ -704,14 +705,16 @@ fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int, onConfirm: (S
                         onConfirm(symptomName)
                         onDismissRequest()
                     }
-                })
+                },
+                colors= ButtonDefaults.buttonColors(Color(0xff216869)),
+                shape = RoundedCornerShape(12.dp))
             {
                 Text("Save")
             }
         },
         dismissButton = {
             TextButton(onClick = { onDismissRequest() }) {
-                Text("Close")
+                Text("Close", color=Color(0xff216869))
             }
         }
     )
@@ -1637,7 +1640,14 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
                     placeholder = { Text("Enter symptom / activity name") },
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "search") }
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "search") },
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color(0xff216869),
+                        focusedLabelColor = Color(0xff216869),
+                        unfocusedIndicatorColor = Color.Gray,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent
+                    )
                 )
 
                 // Search bar results
