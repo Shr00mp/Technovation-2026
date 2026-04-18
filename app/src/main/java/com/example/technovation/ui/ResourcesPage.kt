@@ -98,10 +98,9 @@ import java.util.Locale
 enum class Type { ARTICLE, VIDEO }
 
 enum class Category {
-    EXERCISE,
-    MEDITATION,
-    HEALTH,
-    RECIPES
+    MENTAL,
+    PHYSICAL,
+    GENERAL
 }
 
 @Entity(tableName = "Resources_Database")
