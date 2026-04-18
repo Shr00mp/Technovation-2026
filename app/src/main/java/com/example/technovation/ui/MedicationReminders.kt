@@ -84,7 +84,7 @@ class MedicationViewModel : ViewModel() {
         // Manually assigning IDs for the prototype
         allMedication.addAll(listOf(
             Medication(id = 1, name = "Lisinopril", doseQuantity = 1, doseUnit = "Pill", time = LocalTime.now().minusHours(1)),
-            Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.now().plusMinutes(7)),
+            Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.now().plusMinutes(6)),
             Medication(id = 3, name = "Metformin", doseQuantity = 1, doseUnit = "Tablet", time = LocalTime.now().plusHours(1)),
         ))
     }
