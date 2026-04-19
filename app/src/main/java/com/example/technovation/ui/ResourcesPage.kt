@@ -58,7 +58,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,7 +75,6 @@ import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.room3.TypeConverter
 import androidx.room3.TypeConverters
-import com.example.technovation.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -88,75 +86,79 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SpatialAudioOff
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.core.text.HtmlCompat
+import kotlinx.coroutines.flow.first
 import java.util.Locale
 
-enum class Type { ARTICLE, VIDEO }
-
+//defining what categories of articles there are (for filtering)
 enum class Category {
-    EXERCISE,
-    MEDITATION,
-    HEALTH,
-    RECIPES
+    MENTAL,
+    PHYSICAL,
+    GENERAL
 }
 
+//defining the resources database table, matching exactly with the schema in DB browser
 @Entity(tableName = "Resources_Database")
 data class Content(
     @PrimaryKey val contentId: Int,
     val title: String,
-    val type: Type,
     val category: Category,
     val htmlContent: String? = null,
-    val videoUrl: String? = null,
     val saved: Boolean = false,
     val recommended: Boolean = false,
     val imageRes: String? = null
 )
 
 //data access object: where I define database interactions and queries
+//defined using Flow, which is a type used for continuous live updation and emission to/from database
 @Dao
 interface ContentDao {
+    //Select all articles
     @Query("SELECT * FROM Resources_Database")
     fun displayAll(): Flow<List<Content>>
 
+    //Select recommended and saved articles
+    // 'recommended' and 'saved' fields are set to 1 in the database when recommended and 0 otherwise
     @Query("SELECT * FROM Resources_Database WHERE recommended = 1")
     fun displayRecommended(): Flow<List<Content>>
 
     @Query("SELECT * FROM Resources_Database WHERE saved = 1")
     fun getSaved(): Flow<List<Content>>
 
-    @Query("SELECT * FROM Resources_Database WHERE type = :type")
-    fun filterByType(type: Type): Flow<List<Content>>
-
+    //select a certain article by specific ID
     @Query("SELECT * FROM Resources_Database WHERE contentId = :id")
     fun getById(id: Int): Flow<Content?>
 
+    //toggles the saved status depending on if saved is 0 or 1
     @Query("UPDATE Resources_Database SET saved = :saved WHERE contentId = :id")
     suspend fun updateSaved(id: Int, saved: Boolean)
 
+    //clears all recommendations so they can be updated
     @Query("UPDATE Resources_Database SET recommended = 0")
     suspend fun clearAllRecommended()
 
+    //flags articles recommended by broad category
     @Query("UPDATE Resources_Database SET recommended = 1 WHERE category IN (:categories)")
     suspend fun setRecommendedForCategories(categories: List<String>)
 
+    //flags a specific article recommended by keyword matching
     @Query("UPDATE Resources_Database SET recommended = 1 WHERE contentId IN (:ids)")
     suspend fun setRecommendedByIds(ids: List<Int>)
 }
 
+//converts to and from a plain string (as stored in the database) to my defined enum class
 class Converters {
-    @TypeConverter fun fromType(value: Type): String = value.name
-    @TypeConverter fun toType(value: String): Type = Type.valueOf(value)
+    @TypeConverter fun fromCategory(value: Category): String = value.name
     @TypeConverter fun toCategory(value: String): Category = Category.valueOf(value)
 }
 
+//defining and initialising my Room database - the version number was updated whenever the schema changed
 @SuppressLint("RestrictedApi")
-@Database(entities = [Content::class], version = 2, exportSchema = false)
+@Database(entities = [Content::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ResourcesDatabase : RoomDatabase() {
     abstract fun contentDao(): ContentDao
@@ -164,6 +166,7 @@ abstract class ResourcesDatabase : RoomDatabase() {
     companion object {
         @Volatile private var INSTANCE: ResourcesDatabase? = null
 
+        //ensures only one instance of the database is created avoiding conflicts
         fun getDatabase(context: Context): ResourcesDatabase {
             return INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -172,7 +175,6 @@ abstract class ResourcesDatabase : RoomDatabase() {
                     "Resources_Database"
                     //building the database in Room from the predefined database in db browser
                 ).createFromAsset("Resources_Database.db")
-                    //.fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }
@@ -180,10 +182,12 @@ abstract class ResourcesDatabase : RoomDatabase() {
     }
 }
 
+//which filters are currently selected
 data class FilterState(
     val selectedCategories: Set<Category> = emptySet()
 )
 
+//holds information being updated during the runtime of the app
 class ResourcesViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = ResourcesDatabase.getDatabase(application).contentDao()
 
@@ -196,9 +200,11 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
     val recommended: StateFlow<List<Content>> = dao.displayRecommended()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val articles: StateFlow<List<Content>> = dao.filterByType(Type.ARTICLE)
+    val articles: StateFlow<List<Content>> = dao.displayAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    //articles are filtered by the current SQL query and the selected filters
+    //reruns when either state changes
     val filteredContent: StateFlow<List<Content>> = combine(
         searchQuery, filterState
     ) { query, filter -> Pair(query, filter) }
@@ -227,8 +233,10 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun getContentById(id: Int): Flow<Content?> = dao.getById(id)
 
+    //used to hold the last time that recommendations were refreshed
     private val sharedPrefs = application.getSharedPreferences("recom_prefs", Context.MODE_PRIVATE)
 
+    //checks against sharedPrefs, and if it's been more than 24 hours returns true
     private fun shouldRefresh(): Boolean {
         val lastRefresh = sharedPrefs.getLong("last_refresh_timestamp", 0L)
         val currentTime = System.currentTimeMillis()
@@ -237,17 +245,18 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
         return (currentTime - lastRefresh) > oneDayInMillis
     }
 
+    //saves the current time as the last refresh timestamp when called
     private fun markRefreshed() {
         sharedPrefs.edit().putLong("last_refresh_timestamp", System.currentTimeMillis()).apply()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun refreshRecommendations(allEntriesViewModel: AllJournalEntries) {
-        // Only continues if a day has passed
+        // only continues to refreshing if a day has passed
         if (!shouldRefresh()) return
 
         viewModelScope.launch {
-            // gets keywords from the journal
+            // gets keywords from the journal, converts all to lowercase, and removes duplicates
             val keywords = allEntriesViewModel.history.flatMap { entry ->
                 entry.physicalSymptomsEntry.map { it.name.lowercase() } +
                         entry.mentalSymptomsEntry.map { it.name.lowercase() } +
@@ -258,18 +267,20 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
             if (keywords.isEmpty()) return@launch
 
             // gets the articles from the database and matches them up with journal entries
-            val allContent = dao.displayAll().map { it }.stateIn(viewModelScope).value
+            //'first()' added as a bug fix to ensure Room has emitted the article list before recommendations made
+            val allContent = dao.displayAll().first()
 
+            //maps article titles to the keywords
             val candidateIds = allContent.filter { content ->
                 val titleWords = content.title.lowercase()
                 keywords.any { keyword -> titleWords.contains(keyword) }
             }.map { it.contentId }
 
-            // If there are enough articles recommended to refresh them, shuffle and refresh (the next day)
+            //if there are enough articles recommended to refresh them, shuffle and refresh (the next day)
             if (candidateIds.isNotEmpty()) {
                 val currentRecommendedIds = recommended.value.map { it.contentId }.toSet()
 
-                // Check if there are new articles that aren't currently recommended
+                //check if there are new articles that aren't currently recommended
                 val newOptionsAvailable = candidateIds.any { it !in currentRecommendedIds }
 
                 if (newOptionsAvailable || currentRecommendedIds.isEmpty()) {
@@ -280,13 +291,15 @@ class ResourcesViewModel(application: Application) : AndroidViewModel(applicatio
                     dao.clearAllRecommended()
                     dao.setRecommendedByIds(selectedIds)
 
-                    // Update timestamp so won't refresh until next day
+                    //update timestamp so won't refresh until next day
                     markRefreshed()
                 }
             }
         }
     }
 }
+
+//formatting of where everything goes on the page + application of the functions
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -501,7 +514,7 @@ fun ResourcesPage(
     }
 }
 
-
+//defines how all articles should appear before being clicked on, with a title, image, label, and save/unsave heart
 @Composable
 fun ArticleCard(
     article: Content,
@@ -509,6 +522,7 @@ fun ArticleCard(
     onBookmarkClick: () -> Unit
 ) {
     val context = LocalContext.current
+    //matches the imageRes to the file in res -> drawable
     val imageResId: Int? = article.imageRes?.let { resName ->
         val id = context.resources.getIdentifier(resName, "drawable", context.packageName)
         if (id != 0) id else null
@@ -523,7 +537,7 @@ fun ArticleCard(
         colors = CardDefaults.cardColors(Color(0xffDCE1DE))
     ) {
         Column {
-            // Cover image — only shown when the article has an imageRes set in the DB
+            // cover image shown when the article has an imageRes set in the DB
             if (imageResId != null) {
                 Image(
                     painter = androidx.compose.ui.res.painterResource(id = imageResId),
@@ -560,6 +574,7 @@ fun ArticleCard(
                         fontSize = 14.sp
                     )
                 }
+                //heart icon is filled if saved and unfilled if not
                 IconButton(onClick = onBookmarkClick) {
                     Icon(
                         imageVector = if (article.saved) Icons.Default.Favorite
@@ -574,7 +589,7 @@ fun ArticleCard(
     }
 }
 
-
+//renders the HTML content of the articles in a WebView once clicked on
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleDetailScreen(
@@ -586,14 +601,17 @@ fun ArticleDetailScreen(
         .collectAsStateWithLifecycle(initialValue = null)
 
     val context = LocalContext.current
+    //checks if text to speech (TTS) is currently speaking, to update the icon between play and stop
     val isSpeaking = remember { mutableStateOf(false) }
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
 
+    //initialises TTS and stops it when the screen is left so it doesn't keep speaking
     DisposableEffect(Unit) {
         var instance: TextToSpeech? = null
         instance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 instance?.language = Locale.getDefault()
+                //updates isSpeaking if the article is finished or if there's an error
                 instance?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {}
                     override fun onDone(utteranceId: String?) { isSpeaking.value = false }
@@ -619,12 +637,14 @@ fun ArticleDetailScreen(
                         }
                     },
                     actions = {
+                        //read aloud button
                         IconButton(onClick = {
                             val engine = tts.value ?: return@IconButton
                             if (isSpeaking.value) {
                                 engine.stop()
                                 isSpeaking.value = false
                             } else {
+                                //strips the HTML tags off so it's only reading out the actual content
                                 val plainText = HtmlCompat.fromHtml(
                                     article.htmlContent ?: "",
                                     HtmlCompat.FROM_HTML_MODE_LEGACY
@@ -651,6 +671,7 @@ fun ArticleDetailScreen(
                 )
             }
         ) { padding ->
+            //rendering of the stored HTML
             AndroidView(
                 factory = { ctx ->
                     WebView(ctx).apply {
@@ -660,6 +681,7 @@ fun ArticleDetailScreen(
                     }
                 },
                 update = { webView ->
+                    //defines the auto settings for font and style
                     val html = """
                         <html><head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -677,6 +699,7 @@ fun ArticleDetailScreen(
                     .padding(padding)
             )
         }
+        //shows the loading spinner whilst the article is being loaded
     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
