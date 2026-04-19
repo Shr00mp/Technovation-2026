@@ -47,6 +47,10 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.example.technovation.R
 
+
+// ! NOTE ! Our code contains no default registered users, so in order to view the other pages
+// you will need to use the Sign-Up option
+
 data class User (
     val username: String,
     val password: String
@@ -58,6 +62,7 @@ class LoginSignupViewmodel : ViewModel() {
 
     fun signUp(user: User): Boolean {
         if (registeredUsers.any {it.username == user.username}) {
+            // check if user is already registered / if that username already exists
             return false
         } else {
             registeredUsers.add(user)
@@ -67,11 +72,8 @@ class LoginSignupViewmodel : ViewModel() {
     }
 
     fun logIn(user: User): Boolean {
-        if (registeredUsers.any {it.username == user.username && it.password == user.password}) {
-            return true
-        } else {
-            return false
-        }
+        // returns true only if username and password exist and match
+        return registeredUsers.any {it.username == user.username && it.password == user.password}
     }
 }
 
@@ -115,7 +117,7 @@ fun LoginPage(
             containerColor = Color.Transparent,
             contentColor = Color(0xff216869)
         ) {
-            tabs.forEachIndexed { index, title -> // For each tab in the list:
+            tabs.forEachIndexed { index, title -> // For each tab in the list
                 Tab(
                     selected = selectedTab == index, // Determines whether or not tab is selected
                     onClick = { selectedTab = index }, // When clicked, the tab is selected
@@ -154,7 +156,7 @@ fun LoginContent(navController: NavController, viewModel: LoginSignupViewmodel) 
             value = username,
             onValueChange = {username = it}, // As user types, the username variable also updates
             leadingIcon = {
-                Icon(Icons.Default.Person, contentDescription = "person") // Icon at the front of the text field is a person
+                Icon(Icons.Default.Person, contentDescription = "person")
             },
             label = {Text(text = "Username")},
             modifier = Modifier
@@ -166,7 +168,7 @@ fun LoginContent(navController: NavController, viewModel: LoginSignupViewmodel) 
         // Password text field
         OutlinedTextField(
             value = password,
-            onValueChange = {password = it}, // As user types, the password variable also updates
+            onValueChange = {password = it},
             leadingIcon = {
                 Icon(Icons.Default.Lock, contentDescription = "lock")
             },
@@ -216,10 +218,10 @@ fun getErrorMessage(type: String, username: String, password: String, confirmPas
     if (username == "") { // If username has not been entered
         errorMessage = "Please enter a username."
     }
-    else if (password == "") { // If passowrd has not been enetered
+    else if (password == "") { // If password has not been enetered
         errorMessage = "Please enter a password"
     }
-    else if (type == "Sign up") { // If the sign up tab is selected and
+    else if (type == "Sign up") { // If the sign-up tab is selected and
         if (password != confirmPassword) { // the passwords do not match
             errorMessage = "Passwords do not match"
         }
@@ -269,9 +271,10 @@ fun SignupContent(navController: NavController, viewmodel: LoginSignupViewmodel)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.height(20.dp))
+        // Username
         OutlinedTextField(
             value = username,
-            onValueChange = {username = it}, // As user types, the username also updates
+            onValueChange = {username = it},
             leadingIcon = {
                 Icon(Icons.Default.Person, contentDescription = "person")
             },
@@ -281,9 +284,10 @@ fun SignupContent(navController: NavController, viewmodel: LoginSignupViewmodel)
                 .width(400.dp),
         )
         Spacer(modifier = Modifier.height(15.dp))
+        // Password
         OutlinedTextField(
             value = password,
-            onValueChange = {password = it}, // As the user types, the password also updates
+            onValueChange = {password = it},
             leadingIcon = {
                 Icon(Icons.Default.Lock, contentDescription = "lock")
             },
@@ -293,9 +297,10 @@ fun SignupContent(navController: NavController, viewmodel: LoginSignupViewmodel)
                 .width(400.dp),
         )
         Spacer(modifier = Modifier.height(15.dp))
+        // Confirm password
         OutlinedTextField(
             value = confirmPassword,
-            onValueChange = {confirmPassword = it}, // As the user types, the confirmation password also updates
+            onValueChange = {confirmPassword = it},
             leadingIcon = {
                 Icon(Icons.Default.Lock, contentDescription = "lock")
             },

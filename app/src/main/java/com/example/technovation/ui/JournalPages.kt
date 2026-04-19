@@ -605,36 +605,40 @@ class SymptomsViewModel: ViewModel() {
             }
         }
 
+        // Creates list of entries before and afer date of starting the activity
         val beforeEntries = history.filter { it.date.isBefore(thresholdDate) }
         val afterEntries = history.filter { it.date.isAfter(thresholdDate) || it.date.isEqual(thresholdDate) }
 
-        // Should have at least some entries before and after the activity started to make a comparison
+        // Should have at least some entries before and after the activity started in order to make comparison
         if (beforeEntries.isEmpty() || afterEntries.isEmpty()) return null
 
-       // Get the regularity of symptom before activity using (total days with symptom) / (total days without symptom)
+       // Get the frequency of symptom before activity using (total days with symptom) / (total days without symptom)
         val frequencyBefore = beforeEntries.count { entry ->
             entry.mentalSymptomsEntry.any { it.name == symptomName } ||
                     entry.physicalSymptomsEntry.any { it.name == symptomName }
         }.toDouble() / beforeEntries.size
 
-        // Get the regularity of the symptom after activity
+        // Get the frequency of the symptom after starting activity
         val frequencyAfter = afterEntries.count { entry ->
             entry.mentalSymptomsEntry.any { it.name == symptomName } ||
                     entry.physicalSymptomsEntry.any { it.name == symptomName }
         }.toDouble() / afterEntries.size
 
-        // Return the difference
+        // Return the difference (as %)
         return (frequencyBefore - frequencyAfter) * 100
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun getWeeklySymptomCounts(history: List<Entry>, symptomName: String): Map<LocalDate, Int> {
+        // this is for the bar chart on stats page
         if (history.isEmpty()) return emptyMap()
 
+        // map with key as date of monday and value as the symptom / activity count
         return history.groupBy { entry ->
-            entry.date.with(DayOfWeek.MONDAY)
-        }.mapValues { (_, entriesInWeek) ->
-            entriesInWeek.count { entry ->
+            entry.date.with(DayOfWeek.MONDAY) // so creates a map with key date and value list of entries
+        }.mapValues { (date, listOfEntriesInWeek) ->
+            listOfEntriesInWeek.count { entry ->
+                // need to check for symptom name across physical, mental and activity lists
                 entry.physicalSymptomsEntry.any { it.name.equals(symptomName, ignoreCase = true) } ||
                         entry.mentalSymptomsEntry.any { it.name.equals(symptomName, ignoreCase = true) } ||
                         entry.activitiesEntry.any {it.name.equals(symptomName, ignoreCase = true)}
@@ -643,6 +647,7 @@ class SymptomsViewModel: ViewModel() {
     }
 
     fun loadValuesForEditing(entry: Entry) {
+        // is for when user wants to edit an existing journal entry
         pastEntryDate = entry.date
         tempMood = entry.mood
         tempText = entry.textInJournal
@@ -656,6 +661,7 @@ class SymptomsViewModel: ViewModel() {
 
 @Composable
 fun SymptomItem(symptom: Symptom, toggleSymptom: () -> Unit) {
+    // Each toggle for physical, mental symptoms and activities
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -720,7 +726,7 @@ fun AddNewSymptomDialogue(onDismissRequest: () -> Unit, type: Int, onConfirm: (S
                 onClick = {
                     if (symptomName.isNotBlank()){
                         onConfirm(symptomName)
-                        onDismissRequest()
+                        onDismissRequest() // close dialogue
                     }
                 },
                 colors= ButtonDefaults.buttonColors(Color(0xff216869)),
@@ -828,7 +834,7 @@ fun NewJournalEntry(
                     "Select your mood based on the emojis below",
                     fontSize = 20.sp,
                 )
-                val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
+                val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄") // intuitive icons
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(
                     modifier = Modifier
@@ -838,6 +844,7 @@ fun NewJournalEntry(
                     moodEmojis.forEachIndexed { index, emoji ->
                         val level = index + 1
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // emoji has lower opacity if not selected
                             Text(
                                 text = emoji,
                                 fontSize = 30.sp,
@@ -852,6 +859,7 @@ fun NewJournalEntry(
 
         }
 
+        // Custom questions card
         if (!symptomsViewModel.customQuestionList.isEmpty()) {
             Spacer(modifier=Modifier.height(40.dp))
 
@@ -878,7 +886,7 @@ fun NewJournalEntry(
                             modifier=Modifier
                                 .align(Alignment.Start)
                                 .padding(horizontal = 20.dp))
-                        if (question.type==1) {
+                        if (question.type==1) { // yes or no checklist
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -905,7 +913,7 @@ fun NewJournalEntry(
                                     fontSize = 18.sp
                                 )
                             }
-                        } else {
+                        } else { // open-ended question
                             OutlinedTextField(
                                 value = symptomsViewModel.tempCustomAnswers[question.id] ?: "",
                                 onValueChange = { symptomsViewModel.tempCustomAnswers[question.id] = it },
@@ -1041,7 +1049,7 @@ fun NewJournalEntry(
                     fontSize = 20.sp, fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Enter which activites you did today",
+                    "Enter which activities you did today",
                     fontSize = 20.sp,
                 )
 
@@ -1135,10 +1143,12 @@ fun NewJournalEntry(
 
         Button(
             onClick = {
+                // remember tempCustomAnswers is a map with key question id and value question answer
                 val customAnswerQuestions = symptomsViewModel.tempCustomAnswers.map { (questionID, text) ->
                     CustomAnswer(questionId = questionID, answer = text)
                 }
                 val newEntry = Entry(
+                    // uses temporary variables in the symptoms view model to update
                     date = symptomsViewModel.pastEntryDate,
                     mood = symptomsViewModel.tempMood,
                     physicalSymptomsEntry = symptomsViewModel.getSelectedPhysicalSymptoms(),
@@ -1167,6 +1177,8 @@ fun addExampleData(
     mentalOptions: List<Symptom>,
     activityOptions: List<Symptom>
 ): List<Entry> {
+    // When the user actually uses the app, we will remove this function
+    // However, we use this function for now in order to demonstrate app functionalities
     val returnList = arrayListOf<Entry>()
     var currDate = LocalDate.now()
     var mood = 1
@@ -1178,15 +1190,19 @@ fun addExampleData(
         if (i in 10..14) {mood =(1..3).random()}
 
         // We want the general trend for the first 2 physical symptoms and first 2 mental symptoms to be decreasing
+        // since i is the only variable increasingly steadily, we can use i to generate our thresholds
         val currPhysical = mutableListOf<Symptom>()
         physicalOptions.forEachIndexed { index, symptom ->
             val randomChanceP = (1..100).random()
             if (index == 0 || index== 1) {
                 val thresholdForChoosingSymptomP = i*5 // For i=1, would be 5% and goes up to 70% for i=14
                 if (randomChanceP <= thresholdForChoosingSymptomP) {
+                    // So we only add the symptom if the random chance is below threshold, which gets
+                    // bigger and bigger as i gets larger, i.e. further back in time
                     currPhysical.add(symptom)
                 }
             } else {
+                // We don't care about this symptom that much so just used a hardcoded low threshold
                 if (randomChanceP <=20) {currPhysical.add(symptom)}
             }
         }
@@ -1219,6 +1235,7 @@ fun addExampleData(
                     }
                 }
             } else {
+                // Again, we don't really care about the other activities
                 if (randomChanceA < 10) {
                     currActivities.add(symptom)
                 }
@@ -1234,7 +1251,7 @@ fun addExampleData(
                 activitiesEntry = currActivities,
                 textInJournal = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer " +
                         "sagittis tortor non massa varius, sit amet interdum nibh interdum. Duis " +
-                        "hendrerit auctor sem, vel gravida dolor congue nec."
+                        "hendrerit auctor sem, vel gravida dolor congue nec." // placeholder text
             )
         )
     }
@@ -1261,6 +1278,7 @@ class AllJournalEntries(): ViewModel() {
 
     val customQuestions = mutableStateListOf<CustomQuestion>()
     fun initialise(symptomsViewModel: SymptomsViewModel) {
+        // add the example data
         if (!initialised) {
             history.addAll(addExampleData(
                 physicalOptions = symptomsViewModel.physicalSymptoms,
@@ -1362,6 +1380,7 @@ fun PastEntryCard(
                 }
             }
 
+            // Mood
             val moodEmojis = listOf("😢", "😟", "😐", "🙂", "😄")
             Row(
                 modifier = Modifier
@@ -1370,11 +1389,12 @@ fun PastEntryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Mood:", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text(moodEmojis[entry.mood - 1], fontSize = 20.sp)
+                Text(moodEmojis[entry.mood - 1], fontSize = 20.sp) // mood attribute starts from 1
             }
 
             Spacer(modifier=Modifier.height(5.dp))
 
+            // Answers to custom questions
             entry.customAnswers.forEach {  customAnswer ->
                 val question = symptomsViewModel.customQuestionList.find { it.id == customAnswer.questionId }?.questionText?: "Blank question"
                 val answer = customAnswer.answer
@@ -1401,6 +1421,7 @@ fun PastEntryCard(
                 Spacer(modifier=Modifier.height(20.dp))
             }
 
+            // Physical symptoms logged
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1424,6 +1445,7 @@ fun PastEntryCard(
 
             Spacer(modifier=Modifier.height(5.dp))
 
+            // Mental symptoms logged
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1446,6 +1468,7 @@ fun PastEntryCard(
 
             Spacer(modifier=Modifier.height(5.dp))
 
+            // Activities logged
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1468,6 +1491,7 @@ fun PastEntryCard(
 
             Spacer(modifier=Modifier.height(20.dp))
 
+            // Notes
             if (entry.textInJournal == "") {
                 Text("No written journal entry made on this day", fontSize = 20.sp)
             } else {
@@ -1506,6 +1530,7 @@ fun PastEntries(
 
         Spacer(modifier=Modifier.height(55.dp))
 
+        // For each entry in journal, generate a past entry card
         if (allEntriesViewModel.history.isEmpty()) {
             Text("No entries yet. Start journaling!")
         } else {
@@ -1548,7 +1573,7 @@ fun AlreadyMadeEntryDialogue(
     onEdit: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = { onDismiss },
+        onDismissRequest = { onDismiss() },
         text = { Text("You have already made an entry today. \nYou may choose to edit your past entry.") },
         confirmButton = {
             Button(onClick = { onEdit() }) {
@@ -1570,7 +1595,7 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
     val moodValues = sortedEntries.map { it.mood.toDouble() }
 
     // Labelling the x-axis with only the start of every week
-    // Tried labelling every day before but that got way too crowded
+    // Tried labelling every day before but that got way too crowded, even with rotating labels
     val dateLabels = remember(sortedEntries) {
         sortedEntries.mapIndexed { index, entry ->
             if (entry.date.dayOfWeek == DayOfWeek.MONDAY) {
@@ -1608,12 +1633,12 @@ fun MoodChart(entries: List<Entry>, modifier: Modifier = Modifier) {
             enabled = true,
             textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 20.sp),
             contentBuilder = { value ->
-                val index = value.toInt() - 1
+                val index = value.toInt() - 1 // since mood values start from 1
                 moodEmojis.getOrElse(index) { "" }
             }
         ),
 
-        minValue = 1.0,
+        minValue = 1.0, // needs to be a double
         maxValue = 5.0,
         animationMode = AnimationMode.Together(delayBuilder = { it * 500L }),
     )
@@ -1626,6 +1651,7 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
     var showResults by remember { mutableStateOf(false)}
     // Was originally just symptomsNames, but it is better for user to be able to view activity progress too
     val allNames = viewModel.symptomsAndActivityNames
+    // set filter to not just contain search query at start, but anywhere in the word
     val filteredResults = allNames.filter { it.contains(searchQuery, ignoreCase = true) }
     val weeklyData = viewModel.getWeeklySymptomCounts(history, searchQuery)
 
@@ -1731,7 +1757,8 @@ fun SymptomGraphCard(history: List<Entry>, viewModel: SymptomsViewModel) {
                         }
                     }
                 } else {
-                    Text("You have not yet made an entry for \"$searchQuery\"", color = Color.Gray, modifier = Modifier.padding(20.dp))
+                    Text("You have not yet made an entry for \"$searchQuery\"", color = Color.Gray,
+                        modifier = Modifier.padding(20.dp))
                 }
             }
         }
@@ -1763,7 +1790,7 @@ fun SymptomBarChart(data: Map<LocalDate, Int>, modifier: Modifier = Modifier) {
         modifier = modifier,
         data = bars,
         minValue = 0.0,
-        maxValue = 7.0,
+        maxValue = 7.0, // better to set max so different bar charts compare accurately
         indicatorProperties = HorizontalIndicatorProperties(
             enabled = true,
             count = IndicatorCount.CountBased(8),
