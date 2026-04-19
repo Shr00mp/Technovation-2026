@@ -55,6 +55,7 @@ fun Home(
     resourcesViewModel: ResourcesViewModel = viewModel(),
     loginSignupViewmodel: LoginSignupViewmodel) {
     val recommendedArticles by resourcesViewModel.recommended.collectAsStateWithLifecycle()
+    //either returns the first article from recommended, or if there aren't any, returns null
     val topArticle = recommendedArticles.firstOrNull()
     var showDialog by remember {mutableStateOf(false) }
     val paleGreen = colorResource(id = R.color.pale_green)
@@ -72,7 +73,7 @@ fun Home(
                         break
                     }
                 }
-                // Originally the symptoms are already togg [led for this entry so we needed to reset it
+                // Originally the symptoms are already toggled for this entry so we needed to reset it
                 // Otherwise old selections still apply when editing
                 symptomsViewModel.resetSelections()
                 symptomsViewModel.loadValuesForEditing(entry) // loads mood, text and date
@@ -205,6 +206,7 @@ fun Home(
             style = MaterialTheme.typography.bodyLarge
         )
 
+        // takes the top article from the max 3 recommended articles, to display as the daily recommendation
         if (topArticle != null) {
             Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                 ArticleCard(
@@ -214,7 +216,7 @@ fun Home(
                 )
             }
         } else {
-            // if no recommendations are found yet
+            // if no recommendations are found yet, provide a message telling them to make a journal entry
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
