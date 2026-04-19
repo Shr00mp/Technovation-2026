@@ -113,13 +113,15 @@ fun JournalPage(
     val teaGreen = Color(0xff9CC5A1)
 
     if (showDialog) {
+        // Dialogue shown for when the user has already made an entry for today
+        // Is the same as the one on the home page
         AlreadyMadeEntryDialogue(
             onDismiss = {showDialog= false},
             onEdit = {
                 var entry = allEntriesViewModel.history.first() // Store as something random first
                 for (anEntry in allEntriesViewModel.history) {
                     if (anEntry.date == LocalDate.now()) {
-                        val entry = anEntry
+                        entry = anEntry
                         break
                     }
                 }
@@ -165,6 +167,7 @@ fun JournalPage(
 
         Spacer(modifier=Modifier.height(55.dp))
 
+        // Make new journal entry card
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = teaGreen
@@ -188,6 +191,9 @@ fun JournalPage(
                     .fillMaxWidth()
                     .padding(25.dp)
             ) {
+                // Added icons to the beginning of cards to make their functions more intuitive
+                // Used extended icon library for more options
+                // implementation was added in build.gradle.kts (Module :app)
                 Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(35.dp))
                 Spacer(modifier = Modifier.width(15.dp))
                 Text("Make a new journal entry", fontSize = 25.sp, textAlign = TextAlign.Center,
@@ -203,6 +209,7 @@ fun JournalPage(
 
         Spacer(modifier=Modifier.height(20.dp))
 
+        // See past entries card
         Card(
             onClick = {
                 navController.navigate(route = AppPages.PastEntries.title)
@@ -237,6 +244,7 @@ fun JournalPage(
 
         Spacer(modifier=Modifier.height(20.dp))
 
+        // See statistics card
         Card(
             onClick = {
                 navController.navigate(route = AppPages.Stats.title)
@@ -270,6 +278,7 @@ fun JournalPage(
 
         Spacer(modifier=Modifier.height(20.dp))
 
+        // Add specific question to journal, mostly for clinicians
         Card(
             onClick = {
                 showAddQuestoinDialogue=true
@@ -316,6 +325,9 @@ fun JournalPage(
 
 @Composable
 fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolean, Boolean) -> Unit) {
+    // The user can either allow the question to be a yes or no question or an open-ended one
+    // Added the yes or no option since the majority of questions about e.g. medications side effects
+    // will just be yes or no and not require user to type lots of stuff
     var isYesOrNo by remember { mutableStateOf(true) }
     var isTextBox by remember { mutableStateOf(false) }
     var question: String by remember { mutableStateOf("") }
@@ -336,6 +348,7 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Spacer(modifier=Modifier.height(25.dp))
+                // Information
                 Text(
                     text = "Add Specific Question",
                     fontWeight = FontWeight.Bold,
@@ -355,6 +368,7 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
 
                 Spacer(modifier=Modifier.height(30.dp))
 
+                // Enter question
                 Text(
                     text="Please enter the question below.",
                     modifier=Modifier
@@ -375,6 +389,7 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
 
                 Spacer(modifier=Modifier.height(30.dp))
 
+                // Select question type
                 Text(
                     text="You can either choose a yes or no question or an open-ended one",
                     modifier=Modifier
@@ -445,13 +460,13 @@ fun AddQuestionDialogue(onDismissRequest: () -> Unit, onConfirm: (String, Boolea
 data class Symptom(
     val id: Int,
     val name: String,
-    var selected: Boolean = false
+    var selected: Boolean = false // For toggling it on the make new journal entry page
 )
 
 data class CustomQuestion(
     val id: Int,
     val questionText: String,
-    val type: Int // 1 for yes or no and 2 for open-ended question
+    val type: Int // 1 for yes / no and 2 for open-ended question
 )
 
 data class CustomAnswer(
@@ -462,7 +477,7 @@ data class CustomAnswer(
 @RequiresApi(Build.VERSION_CODES.O)
 class SymptomsViewModel: ViewModel() {
     var physicalSymptoms = mutableStateListOf<Symptom>(
-        Symptom(1, "Dizziness"),
+        Symptom(1, "Dizziness"), // Initial default values
         Symptom(2, "Tremors"),
         Symptom(3, "Headaches"),
         Symptom(4, "Insomnia")
@@ -484,17 +499,17 @@ class SymptomsViewModel: ViewModel() {
 
     var customQuestionList = mutableStateListOf<CustomQuestion>()
     // Note that int is id of question and string is the user's answer
-    var tempCustomAnswers = mutableStateMapOf<Int, String>()
+    var tempCustomAnswers = mutableStateMapOf<Int, String>() // int is ID of questoin, string is answer
     fun addCustomQuestion(text: String, type: Int) {
-        val newId = if (customQuestionList.isEmpty()) 1 else customQuestionList.maxOf { it.id } + 1
+        val newId = if (customQuestionList.isEmpty()) 1 else customQuestionList.maxOf{ it.id } + 1
         customQuestionList.add(CustomQuestion(id = newId, questionText = text, type = type))
     }
 
-    val allSymptomsNames = (physicalSymptoms + mentalSymptoms).map { it.name }
+    val allSymptomsNames = (physicalSymptoms + mentalSymptoms).map { it.name } // just need for activity insights
     val symptomsAndActivityNames = (physicalSymptoms + mentalSymptoms + activities_list).map { it.name }
 
     // in order to allow user to edit their past entries, we need to store their mood, text and date in the viewmodel
-    // so that it can be filled in correctly
+    // so that it can be filled in correctly when they go back to an entry
     var tempMood by mutableStateOf(3)
     var tempText by mutableStateOf("")
     var pastEntryDate by mutableStateOf(LocalDate.now())
@@ -504,6 +519,7 @@ class SymptomsViewModel: ViewModel() {
         val index = currLIst.indexOfFirst { it.id == id }
         var temp = currLIst[index]
         // need to replace the object with an entirely new copy
+        // we essentially replace with a copy where the selected attribute is opposite
         currLIst[index] = temp.copy(selected = !temp.selected)
     }
 
@@ -539,6 +555,7 @@ class SymptomsViewModel: ViewModel() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun resetSelections() {
+        // Need to do this for e.g. making a new entry otherwise the one from previous day are still saved
         for (i in physicalSymptoms.indices) {
             physicalSymptoms[i] = physicalSymptoms[i].copy(selected = false)
         }

@@ -69,17 +69,18 @@ fun Home(
                 var entry = allEntriesViewModel.history.first() // Store as something random first
                 for (anEntry in allEntriesViewModel.history) {
                     if (anEntry.date == LocalDate.now()) {
-                        val entry = anEntry
+                        entry = anEntry // get today's entry
                         break
                     }
                 }
-                // Originally the symptoms are already togg [led for this entry so we needed to reset it
+                // Originally the symptoms are already toggled for this entry so we needed to reset it
                 // Otherwise old selections still apply when editing
                 symptomsViewModel.resetSelections()
                 symptomsViewModel.loadValuesForEditing(entry) // loads mood, text and date
                 // Date is so that when creating new entry, it is saved to the correct date ("Finish Entry" button)
 
                 // Users mentioned it was better to save previous selections instead of completely starting over
+                // So this "turns on" the already selected symptoms
                 entry.physicalSymptomsEntry.forEach { pastSymptom ->
                     symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.physicalSymptoms)
                 }
@@ -89,7 +90,7 @@ fun Home(
                 entry.activitiesEntry.forEach { pastSymptom ->
                     symptomsViewModel.toggleSymptom(pastSymptom.id, symptomsViewModel.activities_list)
                 }
-
+                // Goes to the page for adding new symptom
                 navController.navigate(AppPages.NewEntry.title)
 
                 showDialog = false // close dialogue
@@ -130,9 +131,12 @@ fun Home(
             ),
             onClick = {
                 if (allEntriesViewModel.hasEntryForDay(LocalDate.now())) {
+                    // If the user has already made an entry for today it shows the dialogue
+                    // specified at the beginning of this Home function
+                    // Allows user to either Dismiss or edit their entry for today
                     showDialog = true
                 } else {
-                    symptomsViewModel.resetSelections()
+                    symptomsViewModel.resetSelections() // Otherwise, toggles for symptoms are unchanged
                     navController.navigate(route = AppPages.NewEntry.title)
                 }
             },
@@ -171,6 +175,8 @@ fun Home(
         )
 
         if (medicationsViewModel.remainingTasks.isEmpty()) {
+            // remainingTasks stores all the medication reminder tasks left for today
+            // if there are none, then this card is shown
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -188,6 +194,7 @@ fun Home(
                 }
             }
         } else {
+            // Otherwise, show the next upcoming medication task
             MedicationTaskCard(
                 currMedication = medicationsViewModel.remainingTasks[0],
                 isCompleted = false,
