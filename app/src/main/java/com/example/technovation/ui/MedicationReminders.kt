@@ -56,7 +56,7 @@ class MedicationViewModel : ViewModel() {
     val allMedication = mutableStateListOf<Medication>()
 
     val completedTodayIds = mutableStateListOf<Int>()
-    val completedTasks: List<Medication>
+    val completedTasks: List<Medication> // maps completed ids to hte actual tasks
         get() = allMedication
             .filter { it.id in completedTodayIds }
             .sortedBy { it.time }
@@ -69,7 +69,7 @@ class MedicationViewModel : ViewModel() {
     // For searching medications in the Manage page
     var searchQuery by mutableStateOf("")
 
-    val filteredMedications: List<Medication>
+    val filteredMedications: List<Medication> // for search bar results on Manage page
         get() = allMedication.filter {
             it.name.contains(searchQuery, ignoreCase = true)
         }.sortedBy { it.time }
@@ -81,7 +81,8 @@ class MedicationViewModel : ViewModel() {
     var timeEntry by mutableStateOf(LocalTime.of(8, 0))
 
     init {
-        // Manually assigning IDs for the prototype
+        // Timings of these are relative to when app is opened for now to demonstrate the different
+        // colours of task buttons
         allMedication.addAll(listOf(
             Medication(id = 1, name = "Lisinopril", doseQuantity = 1, doseUnit = "Pill", time = LocalTime.now().minusHours(1)),
             Medication(id = 2, name = "Vitamin D", doseQuantity = 2, doseUnit = "Capsules", time = LocalTime.now().plusMinutes(6)),
@@ -168,7 +169,7 @@ class MedicationViewModel : ViewModel() {
             set(Calendar.HOUR_OF_DAY, medication.time.hour)
             set(Calendar.MINUTE, medication.time.minute)
             set(Calendar.SECOND, 0)
-            add(Calendar.MINUTE,-5) // Changed to get notif 5 mins before set to receive
+            add(Calendar.MINUTE,-5) // Changed to get notif 5 mins before set to take med
         }
 
         // If the time for the alarm today has already passed, then set notification for tomorrow
@@ -290,10 +291,8 @@ fun MedicationPage(
     viewModel: MedicationViewModel = viewModel(),
     resourcesViewModel: ResourcesViewModel = viewModel()
 ) {
-    val scrollState = rememberScrollState()
     val remaining = viewModel.remainingTasks
     val completed = viewModel.completedTasks
-    val teaGreen = colorResource(id = R.color.tea_green)
 
     val allArticles by resourcesViewModel.articles.collectAsStateWithLifecycle()
     val medicationArticle = allArticles.find { it.title.equals("Managing your medication", ignoreCase = true) }
@@ -318,7 +317,7 @@ fun MedicationPage(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(scrollState),
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.Start
         ) {
             if (medicationArticle != null) {
@@ -397,6 +396,8 @@ fun ManageMedicationCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    // Unlike medication task card, it contains delete and edit buttons
+    // It also does not contain the mark as done button
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -451,7 +452,7 @@ fun ManageMedicationPage(
     viewModel: MedicationViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
-    val medsToShow = viewModel.filteredMedications
+    val medsToShow = viewModel.filteredMedications // search query and filtered list both handled by viewmodel
 
     Column(
         modifier = modifier

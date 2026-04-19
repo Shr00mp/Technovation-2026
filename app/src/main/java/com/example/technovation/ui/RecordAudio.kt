@@ -183,11 +183,12 @@ data class AnalysisResult(
     val topIndicators: List<String> = emptyList(),
 
     val date: String = System.currentTimeMillis().toString()
+    // Changed from LocalDate since the user could take multiple recordings in a day
 )
 
 fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
     val client = OkHttpClient.Builder()
-        .connectTimeout(600, TimeUnit.SECONDS)
+        .connectTimeout(600, TimeUnit.SECONDS) // Changed the timeout to be quite long just in case
         .readTimeout(600, TimeUnit.SECONDS)
         .writeTimeout(600, TimeUnit.SECONDS)
         .build()
@@ -204,7 +205,7 @@ fun uploadAudioToServer(filePath: String, onResult: (AnalysisResult?) -> Unit) {
         .build()
 
     val request = Request.Builder()
-        .url("https://unlanguid-ringlike-sheri.ngrok-free.dev/upload-audio/") // using ngrok
+        .url("https://unlanguid-ringlike-sheri.ngrok-free.dev/upload-audio/") // using ngrok to bypass firewall
         .post(requestBody)
         .build()
 
@@ -279,7 +280,7 @@ fun MakeRecording(
                 .padding(horizontal = 20.dp)
         )
         Spacer(modifier=Modifier.height(5.dp))
-        // One long sound like this is good for analysing severity
+        // Vowel sounds are good for analysing PD severity
         Text(
             "Say 'aaaaa' steadily for around 3 seconds.",
             fontSize = 20.sp,

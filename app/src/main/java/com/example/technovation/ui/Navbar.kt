@@ -53,6 +53,10 @@ enum class AppPages(var title: String) {
     LoginPage(title="Login");
 
     fun createRouteForAddingMedication(id: Int): String {
+        // Is for allowing the user to edit a medication task
+        // id of that specific task is passed as part of the route, and can hence be given
+        // as a parameter to the add medication function
+        // Is cleaner and safer, I think, than only using temp variables in viewmodel
         return "$title/$id"
     }
 }
